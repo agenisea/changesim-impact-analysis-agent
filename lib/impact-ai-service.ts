@@ -3,7 +3,7 @@ interface ImpactAnalysis {
   impact: string[]
 }
 
-export async function analyzeImpact(role: string, changeDescription: string): Promise<ImpactAnalysis> {
+export async function generateImpactAnalysis(role: string, changeDescription: string): Promise<ImpactAnalysis> {
   console.log("[v0] Starting impact analysis for role:", role)
   console.log("[v0] Change description:", changeDescription)
 

@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { analyzeImpact } from "@/lib/impact-agent"
+import { generateImpactAnalysis } from "@/lib/impact-ai-service"
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,8 +13,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Role and change description are required" }, { status: 400 })
     }
 
-    console.log("[v0] Calling analyzeImpact function")
-    const analysis = await analyzeImpact(role, changeDescription)
+    console.log("[v0] Calling generateImpactAnalysis function")
+    const analysis = await generateImpactAnalysis(role, changeDescription)
     console.log("[v0] Analysis completed successfully:", analysis)
 
     return NextResponse.json(analysis)
