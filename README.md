@@ -40,6 +40,43 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
 
 ---
 
-## 🤝 Contributing  
+## 🚀 Setup
+
+### Prerequisites
+- Node.js and pnpm installed
+- OpenAI API key
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd changesim-impact-analysis-agent
+   ```
+
+2. **Install dependencies**
+   ```bash
+   pnpm install
+   ```
+
+3. **Configure OpenAI API**
+   - Copy the example environment file:
+     ```bash
+     cp .env.local.example .env.local
+     ```
+   - Get your OpenAI API key from [OpenAI Platform](https://platform.openai.com/api-keys)
+   - Add your API key to `.env.local`:
+     ```
+     OPENAI_API_KEY=your_actual_api_key_here
+     ```
+
+4. **Start the development server**
+   ```bash
+   pnpm dev
+   ```
+
+---
+
+## 🤝 Contributing
 
 This project is in **active exploration**. Feedback, issues, and ideas welcome.  
