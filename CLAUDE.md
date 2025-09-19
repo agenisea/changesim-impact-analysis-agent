@@ -82,6 +82,76 @@ import { DataType } from "@/types/data-type"
 - Keep components small and focused
 - Extract reusable logic into custom hooks or utility functions
 
+## Commit Message Format
+
+Use conventional commits with clear, descriptive messages:
+
+```
+<type>: <description>
+
+- Bullet point describing specific change
+- Another bullet point for additional changes
+- Keep each bullet focused and actionable
+```
+
+### Commit Types
+- **feat**: New feature or functionality
+- **fix**: Bug fixes
+- **refactor**: Code restructuring without changing functionality
+- **docs**: Documentation changes
+- **style**: Code formatting, missing semicolons, etc.
+- **test**: Adding or updating tests
+- **chore**: Maintenance tasks, dependency updates
+
+### Multi-commit Strategy
+For large changes, break into logical commits:
+1. **Types/Logic**: Extract shared types and business logic
+2. **Components**: Create reusable UI components
+3. **Naming/Docs**: Improve naming clarity and add documentation
+
+### Example Commit Messages
+```bash
+refactor: extract shared types and client-side API logic
+
+- Create ImpactInput and ImpactResult shared types
+- Extract client-side API wrapper function for impact analysis
+- Separate business logic from UI components
+```
+
+## Prompt History Documentation
+
+When requested to log session prompts, create a new file in `/prompts/` with this format:
+
+### File Naming Convention
+`claude-prompt-history-MM-DD-YYYY.prompt`
+
+### File Format
+```
+# claude-prompt-history-MM-DD-YYYY.prompt
+# defined: MM-DD-YYYY
+
+This file contains all the prompts used during the [session description].
+
+Prompt 1: [Brief Description]
+[Full prompt text]
+
+Prompt 2: [Brief Description]
+[Full prompt text]
+
+...
+
+Summary of Session
+[Brief description of what was accomplished in the session]
+```
+
+### Guidelines
+- Use comment format (`#`) for filename and date headers
+- Use `MM-DD-YYYY` date format consistently
+- Number prompts sequentially throughout the session
+- Include brief descriptive titles for each prompt
+- Add a summary section at the end describing session outcomes
+- Store all prompt history files in the `/prompts/` directory
+
 ## Testing Commands
 
 When implementing new features, run these commands to ensure code quality:

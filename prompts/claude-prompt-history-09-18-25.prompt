@@ -1,0 +1,75 @@
+# claude-prompt-history-09-18-25.prompt
+# defined: 09-18-2025
+
+This file contains all the prompts used during the refactoring session.
+
+Prompt 1: Initial Refactoring Request
+> Context / Goal
+  We have a Next.js (App Router) TypeScript project for "ChangeSim — Impact Analyzer." The current logic lives mostly in a single app/page.tsx. I want you to
+  refactor it into:
+      1.    shared types,
+      2.    a client-side form component,
+      3.    a presentational result component
+─────────────────────────────────────────────────
+
+Target Structure
+    •    types/impact.ts
+    •    lib/analyzeImpact.ts
+    •    analyzeImpact(input: ImpactInput): Promise<ImpactResult> that POSTs to /api/analyze-impact.
+    •    components/ImpactForm.tsx (client)
+    •    Props: initial?: ImpactInput, onSubmit: (input: ImpactInput) => Promise<void> | void, busy?: boolean
+    •    Contains fields for Role/Team and Proposed Change, calls onSubmit.
+    •    components/ImpactResult.tsx
+    •    Props: { result: ImpactResult | null }
+    •    Renders a simple list of bullets.
+    •    app/page.tsx (or app/impact/page.tsx)
+    •    Client component that wires form → analyzeImpact → result display
+    •    Handles loading and error states
+
+Prompt 2: File Naming Convention Request
+I would like to rename these files so that they are respectfully named: impact-form.tsx | impact-result.tsx | analyze-impact.ts -> '/Users/patrickpena/Projects/changesim-impact-analysis-agent/components/ImpactForm.tsx''/Users/patrickpena/Projects/changesim-impact-analysis-agent/components/ImpactResult.tsx''/Users/patrickpena/Projects/changesim-impact-analysis-agent/lib/analyzeImpact.ts'
+Prompt 3: Development Guidelines Request
+Can you add a claude.md that specifies to kebab-case and a similar modular convention when adding new features and components going forward?
+
+Prompt 4: Package Manager Update Request
+can you update claude.md so that has examples for pnpm and not npm?
+
+Prompt 5: File Comparison Request
+Please explain the difference between these two files and where else they are used in the app: '/Users/patrickpena/Projects/changesim-impact-analysis-agent/lib/analyze-impact.ts''/Users/patrickpena/Projects/changesim-impact-analysis-agent/lib/impact-agent.ts'
+
+Prompt 6: Function Naming Clarification Request
+Please rename them appropriately so that they make sense. To me it doesn't make sense that they both have a function with the same name.
+
+Prompt 7: Commit Strategy Request
+I like all the changes and things are working great. But I won't to break all the changes down into at least 2 concise commits. What files should I include in each commit? What commit message should I use for each?
+
+Prompt 8: Three-Commit Strategy Request
+Could I actually break it down to 3 committs for better clarity
+
+Prompt 9: Commit Format Documentation Request
+Can you add the commit format to the Claude.md so when you're prompted for a commit message for the changes you'll be able to refer to how we should do it going forward?
+
+Prompt 10: Session Documentation Request
+Can you now create a new file called /prompts/claude-prompt-history-09-18-25.prompt and fill it with all the prompts I have used in this session so far?
+
+Prompt 11: File Format Update Request
+I don't need the contents of the file to be in markdown format but please add the name of the file at the top followed by a line that contains the date in mm/dd/yyyy format
+
+Prompt 12: Commit Format Documentation Request
+Can you add the commit format to the Claude.md so when you're prompted for a commit message for the changes you'll be able to refer to how we should do it going forward?
+
+Prompt 13: Prompt History Guidelines Request
+I updated the file with the format I like. Can you add information to claude.md so that when instructed you'll log all the prompts from the current session into a new prompt file following the naming convention and format of the current claude-prompt-history-09-18-2025.prompt file?
+
+Prompt 14: Update Current History File Request
+can you update the current claude prompt history file with all the prompts made in the current session?
+
+Summary of Session
+This session focused on refactoring a monolithic Next.js page into a modular, well-organized codebase with:
+- Shared TypeScript types
+- Modular UI components
+- Clear separation between client-side and server-side logic
+- Consistent kebab-case naming conventions
+- Comprehensive development guidelines
+- Structured commit strategy documentation
+- Prompt history documentation system
