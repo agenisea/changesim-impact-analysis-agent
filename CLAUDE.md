@@ -255,8 +255,20 @@ Summary of Session
 When implementing new features, run these commands to ensure code quality:
 
 ```bash
+# Run test suite
+pnpm run test
+
+# Run tests in watch mode during development
+pnpm run test:watch
+
 # Lint the codebase
 pnpm run lint
+
+# Format code with Prettier
+pnpm run format
+
+# Check code formatting
+pnpm run format:check
 
 # Build the project (includes type checking)
 pnpm run build
@@ -267,3 +279,10 @@ pnpm run dev
 # Start production server
 pnpm run start
 ```
+
+### Testing Guidelines
+
+- All business logic should have corresponding tests
+- Focus on testing critical functions like `mapRiskLevel` in `lib/evaluator.ts`
+- Run tests before committing changes
+- Use descriptive test names that explain the expected behavior
