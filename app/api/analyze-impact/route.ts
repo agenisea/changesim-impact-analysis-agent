@@ -1,10 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { generateText } from "ai"
-import { openai } from "@ai-sdk/openai"
+import { generateObject } from "ai"
 import { ImpactResult } from "@/types/impact"
 import { z } from "zod"
 import { IMPACT_ANALYSIS_SYSTEM_PROMPT } from "@/components/agent/prompt"
 import { mapRiskLevel } from "@/lib/evaluator"
+import { impactModel } from "@/lib/ai-client"
 
 const impactInputSchema = z.object({
   changeDescription: z.string().min(1, "Change description is required"),
@@ -57,9 +57,9 @@ export async function POST(request: NextRequest) {
 
     const runId = `ia_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
 
-    // Generate impact analysis using AI SDK
-    const { text } = await generateText({
-      model: openai('gpt-4o-mini'),
+    // Generate impact analysis using AI SDK with structured outputs
+    const { object: parsedResult, usage } = await generateObject({
+      model: impactModel,
       system: IMPACT_ANALYSIS_SYSTEM_PROMPT,
       prompt: `Analyze the impact of this organizational change:
 
@@ -67,25 +67,13 @@ Change Description: ${changeDescription}
 ${context ? `Additional Context: ${JSON.stringify(context)}` : ''}
 
 Return only valid JSON matching the ImpactResult schema.`,
+      schema: impactResultSchema,
       temperature: 0.2,
       maxOutputTokens: 1500,
     })
 
     console.log("[impact] AI response received")
-
-    let parsedResult: any
-    try {
-      // Clean the response and parse JSON
-      const cleanedText = text.trim().replace(/^```json\s*/, '').replace(/\s*```$/, '')
-      parsedResult = JSON.parse(cleanedText)
-    } catch (parseError) {
-      console.error("[impact] Failed to parse AI response as JSON:", parseError)
-      console.error("[impact] Raw response:", text)
-      return NextResponse.json(
-        { error: "Failed to parse AI response. Please try again." },
-        { status: 500 }
-      )
-    }
+    console.log("[impact] Token usage:", usage)
 
 
     // Apply deterministic risk mapping
@@ -117,18 +105,8 @@ Return only valid JSON matching the ImpactResult schema.`,
       changeDescription: changeDescription,
     }
 
-    // Validate the result against schema
-    const resultValidation = impactResultSchema.safeParse(parsedResult)
-    if (!resultValidation.success) {
-      console.error("[impact] Result validation failed:", resultValidation.error)
-      console.error("[impact] Parsed result:", parsedResult)
-      return NextResponse.json(
-        { error: "AI response format validation failed. Please try again." },
-        { status: 500 }
-      )
-    }
-
-    const result: ImpactResult = resultValidation.data
+    // Result is already validated by generateObject
+    const result: ImpactResult = parsedResult
 
     console.log("[impact] Impact analysis completed successfully")
     return NextResponse.json(result)

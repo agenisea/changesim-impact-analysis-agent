@@ -38,7 +38,7 @@ export default function ImpactAnalysisPage() {
               <Target className="w-6 h-6 lg:w-8 lg:h-8 text-blue-600 dark:text-blue-400" />
             </div>
             <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-slate-900 dark:text-slate-100 mb-3 lg:mb-4 text-balance">
-              Impact Analysis Agent
+              ChangeSim Impact Analysis
             </h1>
             <p className="text-base md:text-lg lg:text-xl text-slate-600 dark:text-slate-400 text-balance max-w-3xl mx-auto">
               Predict how organizational changes will affect different roles and teams
