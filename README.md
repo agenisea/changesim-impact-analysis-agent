@@ -38,10 +38,12 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
 
 ## ⚙️ Tech Stack
 
-- **Framework**: Next.js App Router (15.x) with React 19 and TypeScript
+- **Framework**: Next.js App Router (15.x) with React 19 and TypeScript (strict mode)
 - **UI**: Tailwind CSS 4, Radix UI, custom artifact components
 - **AI Integration**: Vercel AI SDK (`ai`) with `@ai-sdk/openai` for structured object generation
 - **Risk Logic**: Custom evaluator in `lib/evaluator.ts` maps model outputs to scoped risk levels
+- **Testing**: Vitest with focused test suite for risk evaluation logic
+- **Code Quality**: ESLint + Prettier for consistent formatting and style
 - **Deployment**: Optimized for Vercel (see badge), but runs locally with `pnpm dev`
 
 ---
@@ -94,9 +96,12 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
    pnpm dev
    ```
 
-5. _(Optional)_ **Run lint checks**
+5. _(Optional)_ **Run quality checks**
    ```bash
-   pnpm lint
+   pnpm lint              # Check code style with ESLint
+   pnpm format            # Format code with Prettier
+   pnpm test              # Run test suite
+   pnpm build             # Build for production
    ```
 
 ---
