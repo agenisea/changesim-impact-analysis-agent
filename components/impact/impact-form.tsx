@@ -54,6 +54,9 @@ export function ImpactForm({ initial, onSubmit, busy = false }: ImpactFormProps)
             onChange={(e) => setRole(e.target.value)}
             className="bg-white dark:bg-slate-700"
             disabled={busy}
+            aria-required="true"
+            aria-invalid={error ? "true" : "false"}
+            aria-describedby={error ? "form-error" : undefined}
           />
         </div>
 
@@ -69,12 +72,20 @@ export function ImpactForm({ initial, onSubmit, busy = false }: ImpactFormProps)
             rows={4}
             className="bg-white dark:bg-slate-700 resize-none"
             disabled={busy}
+            aria-required="true"
+            aria-invalid={error ? "true" : "false"}
+            aria-describedby={error ? "form-error" : undefined}
           />
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm">
-            <AlertTriangle className="w-4 h-4" />
+          <div
+            id="form-error"
+            role="alert"
+            aria-live="polite"
+            className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm"
+          >
+            <AlertTriangle className="w-4 h-4" aria-hidden="true" />
             {error}
           </div>
         )}
@@ -82,6 +93,7 @@ export function ImpactForm({ initial, onSubmit, busy = false }: ImpactFormProps)
         <Button
           onClick={handleSubmit}
           disabled={busy}
+          aria-busy={busy}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white"
           size="lg"
         >

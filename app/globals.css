@@ -123,3 +123,21 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Enhanced prose styling for impact analysis */
+@layer components {
+  .prose li {
+    margin-top: 0.25rem;
+    color: inherit;
+  }
+
+  .prose h3 strong,
+  .prose h3 {
+    color: inherit;
+  }
+
+  .prose p strong,
+  .prose li strong {
+    color: inherit;
+  }
+}

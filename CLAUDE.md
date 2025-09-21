@@ -13,6 +13,8 @@ This file contains coding conventions and guidelines for this Next.js TypeScript
 
 ```
 /components/           # Reusable UI components (kebab-case)
+  /impact/            # Feature-specific component subfolders
+  /ui/                # Generic UI component library
 /lib/                 # Utility functions and business logic (kebab-case)
 /types/               # Shared TypeScript type definitions (kebab-case)
 /app/                 # Next.js app router pages and API routes
@@ -60,11 +62,25 @@ interface DisplayProps {
 }
 ```
 
+## Naming Conventions
+
+### Component Naming
+- **File names**: Use descriptive, purpose-driven names (e.g., `impact-report.tsx` not `impact-result-with-artifact.tsx`)
+- **Function names**: Match the primary purpose (e.g., `ImpactReport` not `ImpactReportView`)
+- **Avoid redundant suffixes**: Don't use `-with-artifact`, `-view`, `-component` unless truly necessary
+- **Be specific**: `impact-form.tsx` is better than `form.tsx`
+
+### Feature Organization
+- **Group related files** in feature subdirectories (`/components/impact/`)
+- **Use consistent prefixes** for related components (`impact-form`, `impact-report`, `impact-artifact`)
+- **Avoid nested folder structures** beyond 2-3 levels deep
+
 ## Import Conventions
 
 - Use absolute imports with `@/` prefix
 - Group imports: external libraries first, then internal modules
 - Use kebab-case in import paths to match file names
+- **Remove unused imports** immediately to keep bundle size optimal
 
 ```typescript
 import { useState } from "react"
@@ -74,6 +90,13 @@ import { processData } from "@/lib/process-data"
 import { DataType } from "@/types/data-type"
 ```
 
+## Dependency Management
+
+- **Only add packages that are actively used** - Never install dependencies "just in case"
+- **Remove unused dependencies** immediately when refactoring or removing features
+- **Check existing dependencies** before adding new ones - reuse what's already available
+- **Prefer built-in solutions** over external packages when functionality is simple
+
 ## Code Style
 
 - Use TypeScript strict mode
@@ -81,6 +104,66 @@ import { DataType } from "@/types/data-type"
 - Use meaningful variable and function names
 - Keep components small and focused
 - Extract reusable logic into custom hooks or utility functions
+
+## UX and Accessibility Guidelines
+
+### User Experience Principles
+- **Immediate feedback**: Always provide loading states and progress indicators
+- **Error transparency**: Show clear, actionable error messages with recovery options
+- **Consistent branding**: Use "ChangeSim Impact Analysis" consistently across all UI elements
+- **Performance perception**: Use proper loading skeletons instead of generic spinners
+- **Predictable interactions**: Maintain consistent UI patterns and behaviors
+
+### Accessibility Standards
+- **ARIA attributes**: Always include proper ARIA labels for interactive elements
+  - `aria-required="true"` for required form fields
+  - `aria-invalid` for validation states
+  - `aria-describedby` to link fields with error messages
+  - `aria-busy` for loading states
+  - `role="alert"` and `aria-live="polite"` for dynamic error messages
+  - `aria-hidden="true"` for decorative icons
+
+- **Semantic HTML**: Use proper HTML elements and form structure
+- **Keyboard navigation**: Ensure all interactive elements are keyboard accessible
+- **Focus management**: Proper focus indicators and logical tab order
+- **Error handling**: Associate error messages with form fields using `id` and `aria-describedby`
+
+### Form Design Patterns
+```typescript
+// Required field example
+<Input
+  id="fieldName"
+  aria-required="true"
+  aria-invalid={error ? "true" : "false"}
+  aria-describedby={error ? "field-error" : undefined}
+/>
+
+// Error message example
+{error && (
+  <div
+    id="field-error"
+    role="alert"
+    aria-live="polite"
+  >
+    <Icon aria-hidden="true" />
+    {error}
+  </div>
+)}
+```
+
+## Code Organization Rules
+
+### Dead Code Prevention
+- **Remove unused features immediately** - Don't leave dormant code that "might be useful later"
+- **Delete unused components** and their associated files when refactoring
+- **Clean up unused props** and parameters during component updates
+- **Remove commented-out code** - use git history instead
+
+### Type Management
+- **Consolidate duplicate types** - avoid multiple interfaces for the same data structure
+- **Use a single source of truth** for shared types
+- **Remove optional properties** that are never actually used
+- **Keep type definitions close** to where they're primarily used
 
 ## Commit Message Format
 
@@ -157,9 +240,15 @@ Summary of Session
 When implementing new features, run these commands to ensure code quality:
 
 ```bash
-# Add your project-specific commands here, e.g.:
-# pnpm run lint
-# pnpm run typecheck
-# pnpm run test
-# pnpm run build
+# Lint the codebase
+pnpm run lint
+
+# Build the project (includes type checking)
+pnpm run build
+
+# Start development server
+pnpm run dev
+
+# Start production server
+pnpm run start
 ```

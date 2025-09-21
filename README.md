@@ -12,31 +12,45 @@
 ChangeSim is an **AI-powered agent** that analyzes organizational changes and predicts their human impact.  
 Instead of just mapping processes, ChangeSim highlights how shifts—like a new CRM rollout—may affect trust, training needs, and team resistance.  
 
-- **Input**: Role/team + proposed change  
-- **Output**: Plain-language impact notes (2–3 bullet points)  
+- **Input**: Role or team, plus a short description of the proposed change  
+- **Output**: Structured JSON that includes a markdown summary, normalized risk level, risk scoring dimensions, decision trace, and curated sources  
 - **Why it matters**: Leaders can anticipate challenges *before* rollout and communicate with empathy.  
 
-<img width="1909" height="819" alt="image" src="https://github.com/user-attachments/assets/cda88502-c503-4585-b80c-47e0bcb45bd6" />
+![alt text](image.png)
 
 ---
 
 ## 🛠️ How It Works  
 
-1. Enter a **role/team** and a **proposed change**  
-2. The agent calls an LLM via API with structured prompts  
-3. Returns predicted human impacts as simple insights  
-   - Example: *“Sales team may need retraining, expect resistance to leaving old CRM, plan training sessions for new features.”*  
+1. Enter a **role/team** and a **proposed change** in the sidebar form  
+2. The agent calls an OpenAI model through the [Vercel AI SDK](https://ai-sdk.dev/) using a strict Zod schema  
+3. The response is validated, risk-scored, and rendered as an interactive report artifact  
+   - Example: *“Sales team will need retraining on the new CRM, expect short-term productivity dips, schedule hands-on workshops to smooth adoption.”*  
+
+### Key Features
+- Structured output with schema validation powered by `generateObject`
+- Deterministic risk normalization via `mapRiskLevel`
+- Decision trace and source links to explain model reasoning
+- Copy-to-clipboard artifact optimized for distributing the report
 
 ---
 
 ## ⚙️ Tech Stack  
 
-- **Frontend**: React + TypeScript (generated via [v0.app](https://v0.app))  
-- **Agent Logic**: Calls the OpenAI API with structured prompts (requires API key)  
-- **Infrastructure**: Auto-synced from v0 → GitHub for version control  
-- **Hosting**: Currently local development; can be deployed to Vercel, or another host when ready  
+- **Framework**: Next.js App Router (15.x) with React 19 and TypeScript  
+- **UI**: Tailwind CSS 4, Radix UI, custom artifact components  
+- **AI Integration**: Vercel AI SDK (`ai`) with `@ai-sdk/openai` for structured object generation  
+- **Risk Logic**: Custom evaluator in `lib/evaluator.ts` maps model outputs to scoped risk levels  
+- **Deployment**: Optimized for Vercel (see badge), but runs locally with `pnpm dev`  
 
-⚠️ Note: No live deployment yet — this prevents unnecessary API usage charges.  
+---
+
+## 🧠 Architecture Notes
+
+- **API Route** (`app/api/analyze-impact/route.ts`): Handles validation, invokes `generateObject`, applies risk mapping, and returns a typed `ImpactResult` payload.  
+- **Client Form** (`components/impact/impact-form.tsx`): Collects user input and triggers analysis with `submitImpactAnalysis`.  
+- **Report Rendering** (`components/impact/impact-artifact.tsx`): Displays the structured response, including markdown summary, risk factors, decision trace, and sources.  
+- **Types & Schema** (`types/impact.ts`): Shared contracts ensuring the API and UI stay in sync.  
 
 ---
 
@@ -73,6 +87,11 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
 4. **Start the development server**
    ```bash
    pnpm dev
+   ```
+
+5. *(Optional)* **Run lint checks**
+   ```bash
+   pnpm lint
    ```
 
 ---

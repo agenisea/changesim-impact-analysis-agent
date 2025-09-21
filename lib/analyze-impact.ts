@@ -1,20 +1,29 @@
+import { retryFetch } from "@/lib/utils"
 import { ImpactInput, ImpactResult } from "@/types/impact"
 
+const RETRY_OPTIONS = { maxAttempts: 3, baseDelayMs: 300 }
+
 export async function submitImpactAnalysis(input: ImpactInput): Promise<ImpactResult> {
-  const response = await fetch("/api/analyze-impact", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+  const response = await retryFetch(
+    "/api/analyze-impact",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        role: input.role.trim(),
+        changeDescription: input.changeDescription.trim(),
+      }),
     },
-    body: JSON.stringify({
-      role: input.role.trim(),
-      changeDescription: input.changeDescription.trim(),
-    }),
-  })
+    RETRY_OPTIONS
+  )
 
   if (!response.ok) {
-    throw new Error("Failed to analyze impact")
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.error || "Failed to analyze impact")
   }
 
-  return response.json()
+  const result = await response.json()
+  return result
 }

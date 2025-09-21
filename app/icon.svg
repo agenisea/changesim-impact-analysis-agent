@@ -1,0 +1,22 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="16" cy="16" r="16" fill="#2563eb"/>
+
+  <!-- Target icon with impact waves -->
+  <g transform="translate(8, 8)">
+    <!-- Outer ring -->
+    <circle cx="8" cy="8" r="7" stroke="white" stroke-width="1.5" fill="none"/>
+    <!-- Middle ring -->
+    <circle cx="8" cy="8" r="5" stroke="white" stroke-width="1.5" fill="none"/>
+    <!-- Inner ring -->
+    <circle cx="8" cy="8" r="3" stroke="white" stroke-width="1.5" fill="none"/>
+    <!-- Center dot -->
+    <circle cx="8" cy="8" r="1.5" fill="white"/>
+  </g>
+
+  <!-- Impact indicators (small dots around) -->
+  <circle cx="4" cy="16" r="1" fill="white" opacity="0.6"/>
+  <circle cx="28" cy="16" r="1" fill="white" opacity="0.6"/>
+  <circle cx="16" cy="4" r="1" fill="white" opacity="0.6"/>
+  <circle cx="16" cy="28" r="1" fill="white" opacity="0.6"/>
+</svg>
