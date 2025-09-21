@@ -16,7 +16,7 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
 - **Output**: Structured JSON that includes a markdown summary, normalized risk level, risk scoring dimensions, decision trace, and curated sources  
 - **Why it matters**: Leaders can anticipate challenges *before* rollout and communicate with empathy.  
 
-![alt text](image.png)
+[![Watch the demo](./thumbnail.png)](./demo.mp4)
 
 ---
 
