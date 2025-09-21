@@ -1,28 +1,28 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Target, Loader2, AlertTriangle } from "lucide-react"
-import { ImpactForm } from "@/components/impact/impact-form"
-import { ImpactResultWithArtifact } from "@/components/impact/impact-report"
-import { submitImpactAnalysis } from "@/lib/analyze-impact"
-import { ImpactInput, ImpactResult as ImpactResultType } from "@/types/impact"
+import { useState } from 'react'
+import { Target, Loader2, AlertTriangle } from 'lucide-react'
+import { ImpactForm } from '@/components/impact/impact-form'
+import { ImpactResultWithArtifact } from '@/components/impact/impact-report'
+import { submitImpactAnalysis } from '@/lib/analyze-impact'
+import { ImpactInput, ImpactResult as ImpactResultType } from '@/types/impact'
 
 export default function ImpactAnalysisPage() {
   const [result, setResult] = useState<ImpactResultType | null>(null)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+  const [error, setError] = useState('')
 
   const handleSubmit = async (input: ImpactInput) => {
     setLoading(true)
-    setError("")
+    setError('')
     setResult(null)
 
     try {
       const analysis = await submitImpactAnalysis(input)
       setResult(analysis)
     } catch (err) {
-      setError("Failed to analyze impact. Please try again.")
-      console.error("Analysis error:", err)
+      setError('Failed to analyze impact. Please try again.')
+      console.error('Analysis error:', err)
     } finally {
       setLoading(false)
     }
@@ -63,7 +63,9 @@ export default function ImpactAnalysisPage() {
                 <div className="shadow-lg border-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg">
                   <div className="text-center py-12">
                     <Loader2 className="w-8 h-8 mx-auto mb-4 animate-spin text-blue-600" />
-                    <p className="text-slate-600 dark:text-slate-400">Analyzing potential impacts...</p>
+                    <p className="text-slate-600 dark:text-slate-400">
+                      Analyzing potential impacts...
+                    </p>
                   </div>
                 </div>
               ) : (

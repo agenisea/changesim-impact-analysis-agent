@@ -1,15 +1,14 @@
-"use client"
+'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertTriangle, Target } from "lucide-react"
-import { ImpactResult } from "@/types/impact"
-import { ImpactArtifact } from "@/components/impact/impact-artifact"
-import { ArtifactCard } from "@/components/impact/artifact-card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { AlertTriangle, Target } from 'lucide-react'
+import { ImpactResult } from '@/types/impact'
+import { ImpactArtifact } from '@/components/impact/impact-artifact'
+import { ArtifactCard } from '@/components/impact/artifact-card'
 
 interface ImpactResultWithArtifactProps {
   result: ImpactResult | null
 }
-
 
 function ImpactReport({ result }: { result: ImpactResult }) {
   return (
@@ -49,7 +48,7 @@ function ImpactArtifactFilter({ result }: { result: ImpactResult }) {
     <ImpactArtifact
       data={previewResult}
       onRegenerate={undefined}
-      onShare={() => console.log("Share clicked")}
+      onShare={() => console.log('Share clicked')}
       showActions={false}
       role={result.meta?.role}
       riskFactors={result.risk_reasons || []}
@@ -76,9 +75,7 @@ export function ImpactResultWithArtifact({ result }: ImpactResultWithArtifactPro
           </div>
         )}
 
-        {result && (
-          <ImpactReport result={result} />
-        )}
+        {result && <ImpactReport result={result} />}
       </CardContent>
     </Card>
   )

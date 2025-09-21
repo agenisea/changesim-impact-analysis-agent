@@ -6,7 +6,8 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'ChangeSim Impact Analysis',
-  description: 'Predict how organizational changes will affect different roles and teams using AI-powered impact analysis',
+  description:
+    'Predict how organizational changes will affect different roles and teams using AI-powered impact analysis',
   generator: 'ChangeSim',
   icons: {
     icon: [
