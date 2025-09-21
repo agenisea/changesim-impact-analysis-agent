@@ -1,55 +1,62 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { generateObject } from "ai"
-import { ImpactResult } from "@/types/impact"
-import { z } from "zod"
-import { IMPACT_ANALYSIS_SYSTEM_PROMPT } from "@/components/agent/prompt"
-import { mapRiskLevel } from "@/lib/evaluator"
-import { impactModel } from "@/lib/ai-client"
+import { type NextRequest, NextResponse } from 'next/server'
+import { generateObject } from 'ai'
+import { ImpactResult } from '@/types/impact'
+import { z } from 'zod'
+import { IMPACT_ANALYSIS_SYSTEM_PROMPT } from '@/components/agent/prompt'
+import { mapRiskLevel } from '@/lib/evaluator'
+import { impactModel } from '@/lib/ai-client'
 
 const impactInputSchema = z.object({
-  changeDescription: z.string().min(1, "Change description is required"),
-  role: z.string().min(1, "Role is required"),
+  changeDescription: z.string().min(1, 'Change description is required'),
+  role: z.string().min(1, 'Role is required'),
   context: z.any().optional(),
 })
 
 const impactResultSchema = z.object({
   summary_markdown: z.string(),
-  risk_level: z.enum(["low", "medium", "high", "critical"]),
+  risk_level: z.enum(['low', 'medium', 'high', 'critical']),
   risk_badge_reason: z.string().optional(),
   risk_reasons: z.array(z.string()).min(1).max(4),
   risk_scoring: z.object({
-    scope: z.enum(["individual", "team", "organization", "national", "global"]),
-    severity: z.enum(["minor", "moderate", "major", "catastrophic"]),
-    human_impact: z.enum(["none", "limited", "significant", "mass_casualty"]),
-    time_sensitivity: z.enum(["long_term", "short_term", "immediate", "critical"])
+    scope: z.enum(['individual', 'team', 'organization', 'national', 'global']),
+    severity: z.enum(['minor', 'moderate', 'major', 'catastrophic']),
+    human_impact: z.enum(['none', 'limited', 'significant', 'mass_casualty']),
+    time_sensitivity: z.enum(['long_term', 'short_term', 'immediate', 'critical']),
   }),
   decision_trace: z.array(z.string()).min(3).max(6),
-  sources: z.array(z.object({
-    title: z.string(),
-    url: z.string(),
-  })).min(2),
-  meta: z.object({
-    timestamp: z.string(),
-    status: z.enum(["complete", "pending", "error"]).optional(),
-    run_id: z.string().optional(),
-    role: z.string().optional(),
-    changeDescription: z.string().optional(),
-  }).optional(),
+  sources: z
+    .array(
+      z.object({
+        title: z.string(),
+        url: z.string(),
+      })
+    )
+    .min(2),
+  meta: z
+    .object({
+      timestamp: z.string(),
+      status: z.enum(['complete', 'pending', 'error']).optional(),
+      run_id: z.string().optional(),
+      role: z.string().optional(),
+      changeDescription: z.string().optional(),
+    })
+    .optional(),
 })
-
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("[impact] API route called")
+    console.log('[impact] API route called')
 
     const body = await request.json()
-    console.log("[impact] Request data:", body)
+    console.log('[impact] Request data:', body)
 
     // Validate input
     const validation = impactInputSchema.safeParse(body)
     if (!validation.success) {
-      const errorMessage = validation.error.issues.map((err: any) => `${err.path.join('.')}: ${err.message}`).join(', ')
-      console.log("[impact] Validation failed:", errorMessage)
+      const errorMessage = validation.error.issues
+        .map((err: any) => `${err.path.join('.')}: ${err.message}`)
+        .join(', ')
+      console.log('[impact] Validation failed:', errorMessage)
       return NextResponse.json({ error: errorMessage }, { status: 400 })
     }
 
@@ -72,34 +79,39 @@ Return only valid JSON matching the ImpactResult schema.`,
       maxOutputTokens: 1500,
     })
 
-    console.log("[impact] AI response received")
-    console.log("[impact] Token usage:", usage)
-
+    console.log('[impact] AI response received')
+    console.log('[impact] Token usage:', usage)
 
     // Apply deterministic risk mapping
-    const { scope, severity, human_impact, time_sensitivity } = parsedResult.risk_scoring;
+    const { scope, severity, human_impact, time_sensitivity } = parsedResult.risk_scoring
     const riskResult = mapRiskLevel(
       scope as any, // assumes validated buckets; keep types minimal here
       severity as any,
       human_impact as any,
       time_sensitivity as any
-    );
-    parsedResult.risk_level = riskResult.level;
+    )
+    parsedResult.risk_level = riskResult.level
 
     // Add org-cap decision trace note when triggered
     if (riskResult.orgCapTriggered) {
-      parsedResult.decision_trace?.push('Risk level adjusted to medium due to organizational scope limitations.');
+      parsedResult.decision_trace?.push(
+        'Risk level adjusted to medium due to organizational scope limitations.'
+      )
     }
 
     if (parsedResult.risk_level) {
-      parsedResult.risk_level = parsedResult.risk_level.toLowerCase() as "low" | "medium" | "high" | "critical"
+      parsedResult.risk_level = parsedResult.risk_level.toLowerCase() as
+        | 'low'
+        | 'medium'
+        | 'high'
+        | 'critical'
     }
 
     // Add meta information
     parsedResult.meta = {
       ...parsedResult.meta,
       timestamp: new Date().toISOString(),
-      status: "complete",
+      status: 'complete',
       run_id: runId,
       role: role,
       changeDescription: changeDescription,
@@ -108,30 +120,31 @@ Return only valid JSON matching the ImpactResult schema.`,
     // Result is already validated by generateObject
     const result: ImpactResult = parsedResult
 
-    console.log("[impact] Impact analysis completed successfully")
+    console.log('[impact] Impact analysis completed successfully')
     return NextResponse.json(result)
-
   } catch (error) {
-    console.error("[impact] Impact analysis error:", error)
-    console.error("[impact] Error details:", {
+    console.error('[impact] Impact analysis error:', error)
+    console.error('[impact] Error details:', {
       message: (error as Error).message,
       stack: (error as Error).stack,
     })
 
     const errorMessage = (error as Error).message
-    if (errorMessage.includes("429")) {
+    if (errorMessage.includes('429')) {
       return NextResponse.json(
-        { error: "AI service rate limit exceeded. Please try again in a few moments." },
+        {
+          error: 'AI service rate limit exceeded. Please try again in a few moments.',
+        },
         { status: 429 }
       )
-    } else if (errorMessage.includes("API")) {
+    } else if (errorMessage.includes('API')) {
       return NextResponse.json(
-        { error: "AI service temporarily unavailable. Please try again." },
+        { error: 'AI service temporarily unavailable. Please try again.' },
         { status: 503 }
       )
     } else {
       return NextResponse.json(
-        { error: "Failed to analyze impact. Please try again." },
+        { error: 'Failed to analyze impact. Please try again.' },
         { status: 500 }
       )
     }

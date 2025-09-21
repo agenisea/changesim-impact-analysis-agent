@@ -9,9 +9,7 @@ export function DecisionTrace({ items }: DecisionTraceProps) {
 
   return (
     <div className="space-y-3">
-      <h3 className="font-semibold text-slate-900 dark:text-slate-100">
-        Analysis Process:
-      </h3>
+      <h3 className="font-semibold text-slate-900 dark:text-slate-100">Analysis Process:</h3>
       <div className="space-y-2">
         {items.map((item, index) => (
           <div

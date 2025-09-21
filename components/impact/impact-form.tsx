@@ -1,13 +1,13 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Loader2, Users, AlertTriangle } from "lucide-react"
-import { ImpactInput } from "@/types/impact"
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Loader2, Users, AlertTriangle } from 'lucide-react'
+import { ImpactInput } from '@/types/impact'
 
 interface ImpactFormProps {
   initial?: ImpactInput
@@ -16,17 +16,17 @@ interface ImpactFormProps {
 }
 
 export function ImpactForm({ initial, onSubmit, busy = false }: ImpactFormProps) {
-  const [role, setRole] = useState(initial?.role || "")
-  const [changeDescription, setChangeDescription] = useState(initial?.changeDescription || "")
-  const [error, setError] = useState("")
+  const [role, setRole] = useState(initial?.role || '')
+  const [changeDescription, setChangeDescription] = useState(initial?.changeDescription || '')
+  const [error, setError] = useState('')
 
   const handleSubmit = async () => {
     if (!role.trim() || !changeDescription.trim()) {
-      setError("Please fill in both fields")
+      setError('Please fill in both fields')
       return
     }
 
-    setError("")
+    setError('')
     await onSubmit({
       role: role.trim(),
       changeDescription: changeDescription.trim(),
@@ -51,12 +51,12 @@ export function ImpactForm({ initial, onSubmit, busy = false }: ImpactFormProps)
             id="role"
             placeholder="e.g., Sales Manager, Marketing Team, Customer Support"
             value={role}
-            onChange={(e) => setRole(e.target.value)}
+            onChange={e => setRole(e.target.value)}
             className="bg-white dark:bg-slate-700"
             disabled={busy}
             aria-required="true"
-            aria-invalid={error ? "true" : "false"}
-            aria-describedby={error ? "form-error" : undefined}
+            aria-invalid={error ? 'true' : 'false'}
+            aria-describedby={error ? 'form-error' : undefined}
           />
         </div>
 
@@ -68,13 +68,13 @@ export function ImpactForm({ initial, onSubmit, busy = false }: ImpactFormProps)
             id="change"
             placeholder="Describe the change in 1-2 sentences..."
             value={changeDescription}
-            onChange={(e) => setChangeDescription(e.target.value)}
+            onChange={e => setChangeDescription(e.target.value)}
             rows={4}
             className="bg-white dark:bg-slate-700 resize-none"
             disabled={busy}
             aria-required="true"
-            aria-invalid={error ? "true" : "false"}
-            aria-describedby={error ? "form-error" : undefined}
+            aria-invalid={error ? 'true' : 'false'}
+            aria-describedby={error ? 'form-error' : undefined}
           />
         </div>
 
@@ -103,7 +103,7 @@ export function ImpactForm({ initial, onSubmit, busy = false }: ImpactFormProps)
               Analyzing Impact...
             </>
           ) : (
-            "Analyze Impact"
+            'Analyze Impact'
           )}
         </Button>
       </CardContent>

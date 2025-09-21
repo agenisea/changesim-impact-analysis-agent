@@ -23,6 +23,7 @@ This file contains coding conventions and guidelines for this Next.js TypeScript
 ## Component Guidelines
 
 ### Creating New Features
+
 When adding new features, follow this modular approach:
 
 1. **Define Types First** (`types/feature-name.ts`)
@@ -65,12 +66,14 @@ interface DisplayProps {
 ## Naming Conventions
 
 ### Component Naming
+
 - **File names**: Use descriptive, purpose-driven names (e.g., `impact-report.tsx` not `impact-result-with-artifact.tsx`)
 - **Function names**: Match the primary purpose (e.g., `ImpactReport` not `ImpactReportView`)
 - **Avoid redundant suffixes**: Don't use `-with-artifact`, `-view`, `-component` unless truly necessary
 - **Be specific**: `impact-form.tsx` is better than `form.tsx`
 
 ### Feature Organization
+
 - **Group related files** in feature subdirectories (`/components/impact/`)
 - **Use consistent prefixes** for related components (`impact-form`, `impact-report`, `impact-artifact`)
 - **Avoid nested folder structures** beyond 2-3 levels deep
@@ -83,11 +86,11 @@ interface DisplayProps {
 - **Remove unused imports** immediately to keep bundle size optimal
 
 ```typescript
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { FeatureForm } from "@/components/feature-form"
-import { processData } from "@/lib/process-data"
-import { DataType } from "@/types/data-type"
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { FeatureForm } from '@/components/feature-form'
+import { processData } from '@/lib/process-data'
+import { DataType } from '@/types/data-type'
 ```
 
 ## Dependency Management
@@ -108,6 +111,7 @@ import { DataType } from "@/types/data-type"
 ## UX and Accessibility Guidelines
 
 ### User Experience Principles
+
 - **Immediate feedback**: Always provide loading states and progress indicators
 - **Error transparency**: Show clear, actionable error messages with recovery options
 - **Consistent branding**: Use "ChangeSim Impact Analysis" consistently across all UI elements
@@ -115,6 +119,7 @@ import { DataType } from "@/types/data-type"
 - **Predictable interactions**: Maintain consistent UI patterns and behaviors
 
 ### Accessibility Standards
+
 - **ARIA attributes**: Always include proper ARIA labels for interactive elements
   - `aria-required="true"` for required form fields
   - `aria-invalid` for validation states
@@ -129,6 +134,7 @@ import { DataType } from "@/types/data-type"
 - **Error handling**: Associate error messages with form fields using `id` and `aria-describedby`
 
 ### Form Design Patterns
+
 ```typescript
 // Required field example
 <Input
@@ -154,12 +160,14 @@ import { DataType } from "@/types/data-type"
 ## Code Organization Rules
 
 ### Dead Code Prevention
+
 - **Remove unused features immediately** - Don't leave dormant code that "might be useful later"
 - **Delete unused components** and their associated files when refactoring
 - **Clean up unused props** and parameters during component updates
 - **Remove commented-out code** - use git history instead
 
 ### Type Management
+
 - **Consolidate duplicate types** - avoid multiple interfaces for the same data structure
 - **Use a single source of truth** for shared types
 - **Remove optional properties** that are never actually used
@@ -178,6 +186,7 @@ Use conventional commits with clear, descriptive messages:
 ```
 
 ### Commit Types
+
 - **feat**: New feature or functionality
 - **fix**: Bug fixes
 - **refactor**: Code restructuring without changing functionality
@@ -187,12 +196,15 @@ Use conventional commits with clear, descriptive messages:
 - **chore**: Maintenance tasks, dependency updates
 
 ### Multi-commit Strategy
+
 For large changes, break into logical commits:
+
 1. **Types/Logic**: Extract shared types and business logic
 2. **Components**: Create reusable UI components
 3. **Naming/Docs**: Improve naming clarity and add documentation
 
 ### Example Commit Messages
+
 ```bash
 refactor: extract shared types and client-side API logic
 
@@ -206,9 +218,11 @@ refactor: extract shared types and client-side API logic
 When requested to log session prompts, create a new file in `/prompts/` with this format:
 
 ### File Naming Convention
+
 `claude-prompt-history-MM-DD-YYYY.prompt`
 
 ### File Format
+
 ```
 # claude-prompt-history-MM-DD-YYYY.prompt
 # defined: MM-DD-YYYY
@@ -228,6 +242,7 @@ Summary of Session
 ```
 
 ### Guidelines
+
 - Use comment format (`#`) for filename and date headers
 - Use `MM-DD-YYYY` date format consistently
 - Number prompts sequentially throughout the session

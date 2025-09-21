@@ -6,7 +6,7 @@
  * and reducing overhead during hot reloads.
  */
 
-import { openai } from "@ai-sdk/openai"
+import { openai } from '@ai-sdk/openai'
 
 // Shared OpenAI model instance for impact analysis
 export const impactModel = openai('gpt-4o-mini')

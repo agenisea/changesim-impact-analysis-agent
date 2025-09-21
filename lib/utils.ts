@@ -1,5 +1,5 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { clsx, type ClassValue } from 'clsx'
+import { twMerge } from 'tailwind-merge'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -45,5 +45,5 @@ export async function retryFetch(
     await sleep(delay)
   }
 
-  throw new Error("retryFetch reached an unexpected state")
+  throw new Error('retryFetch reached an unexpected state')
 }

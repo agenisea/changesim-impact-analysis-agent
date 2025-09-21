@@ -6,8 +6,7 @@
  */
 
 // Impact Analysis System Prompt
-export const IMPACT_ANALYSIS_SYSTEM_PROMPT = 
-`You are a senior impact-analysis assistant.  
+export const IMPACT_ANALYSIS_SYSTEM_PROMPT = `You are a senior impact-analysis assistant.  
 Return ONLY valid JSON matching the ImpactResult schema provided below.
 Never include chain-of-thought or hidden reasoning.
 Provide 1-4 specific "risk_reasons" (concise bullet points of what could go wrong) AND 3-6 "decision_trace" bullets (your analysis steps).
