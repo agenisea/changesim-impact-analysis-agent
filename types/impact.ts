@@ -23,7 +23,7 @@ export type ImpactResult = {
     human_impact: 'none' | 'limited' | 'significant' | 'mass_casualty'
     time_sensitivity: 'long_term' | 'short_term' | 'immediate' | 'critical'
   }
-  decision_trace: string[] // 3–6 concise bullets
+  decision_trace: string[] // 3–5 concise bullets
   sources: { title: string; url: string }[]
   meta?: {
     timestamp: string // ISO

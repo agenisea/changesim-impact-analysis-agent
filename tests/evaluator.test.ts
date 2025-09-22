@@ -27,4 +27,14 @@ describe('mapRiskLevel', () => {
     const result = mapRiskLevel('single', 'major', 'limited', 'immediate')
     expect(result.level).toBe('medium')
   })
+
+  it('T6 — single-scope low when mild factors', () => {
+    const result = mapRiskLevel('single', 'moderate', 'none', 'short_term')
+    expect(result.level).toBe('low')
+  })
+
+  it('T7 — national scope escalates to high', () => {
+    const result = mapRiskLevel('national', 'moderate', 'limited', 'short_term')
+    expect(result.level).toBe('high')
+  })
 })
