@@ -3,7 +3,13 @@ import { generateObject } from 'ai'
 import { ImpactResult } from '@/types/impact'
 import { z } from 'zod'
 import { IMPACT_ANALYSIS_SYSTEM_PROMPT } from '@/components/agent/prompt'
-import { mapRiskLevel } from '@/lib/evaluator'
+import {
+  mapRiskLevel,
+  type Scope as RiskScope,
+  type Severity as RiskSeverity,
+  type HumanImpact as RiskHumanImpact,
+  type TimeSensitivity as RiskTimeSensitivity,
+} from '@/lib/evaluator'
 import { impactModel } from '@/lib/ai-client'
 
 const impactInputSchema = z.object({
@@ -23,7 +29,7 @@ const impactResultSchema = z.object({
     human_impact: z.enum(['none', 'limited', 'significant', 'mass_casualty']),
     time_sensitivity: z.enum(['long_term', 'short_term', 'immediate', 'critical']),
   }),
-  decision_trace: z.array(z.string()).min(3).max(6),
+  decision_trace: z.array(z.string()).min(3).max(5),
   sources: z
     .array(
       z.object({
@@ -84,20 +90,24 @@ Return only valid JSON matching the ImpactResult schema.`,
 
     // Apply deterministic risk mapping
     const { scope, severity, human_impact, time_sensitivity } = parsedResult.risk_scoring
+    const normalizedScope = (scope === 'individual' ? 'single' : scope) as RiskScope
     const riskResult = mapRiskLevel(
-      scope as any, // assumes validated buckets; keep types minimal here
-      severity as any,
-      human_impact as any,
-      time_sensitivity as any
+      normalizedScope,
+      severity as RiskSeverity,
+      human_impact as RiskHumanImpact,
+      time_sensitivity as RiskTimeSensitivity
     )
     parsedResult.risk_level = riskResult.level
 
     // Add org-cap decision trace note when triggered
-    if (riskResult.orgCapTriggered) {
-      parsedResult.decision_trace?.push(
-        'Risk level adjusted to medium due to organizational scope limitations.'
-      )
+    if (riskResult.orgCapTriggered && parsedResult.decision_trace) {
+      const guardrailNote = 'Risk level adjusted downward due to organizational scope guardrail'
+      const keptCount = Math.min(parsedResult.decision_trace.length, 4)
+      const trace = parsedResult.decision_trace.slice(0, keptCount)
+      trace.push(guardrailNote)
+      parsedResult.decision_trace = trace
     }
+
 
     if (parsedResult.risk_level) {
       parsedResult.risk_level = parsedResult.risk_level.toLowerCase() as
