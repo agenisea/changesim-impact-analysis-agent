@@ -41,7 +41,7 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
 - **Framework**: Next.js App Router (15.x) with React 19 and TypeScript (strict mode)
 - **UI**: Tailwind CSS 4, Radix UI, custom artifact components
 - **AI Integration**: Vercel AI SDK (`ai`) with `@ai-sdk/openai` for structured object generation
-- **Risk Logic**: Custom evaluator in `lib/evaluator.ts` maps model outputs to scoped risk levels
+- **Risk Logic**: Custom evaluator in `lib/evaluator.ts` with deterministic risk mapping using simplified scope hierarchy (single/team/organization/national/global), organizational scope guardrails, and comprehensive test coverage
 - **Testing**: Vitest with focused test suite for risk evaluation logic
 - **Code Quality**: ESLint + Prettier for consistent formatting and style
 - **Deployment**: Optimized for Vercel (see badge), but runs locally with `pnpm dev`
@@ -54,6 +54,14 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
 - **Client Form** (`components/impact/impact-form.tsx`): Collects user input and triggers analysis with `submitImpactAnalysis`.
 - **Report Rendering** (`components/impact/impact-artifact.tsx`): Displays the structured response, including markdown summary, risk factors, decision trace, and sources.
 - **Types & Schema** (`types/impact.ts`): Shared contracts ensuring the API and UI stay in sync.
+- **Risk Evaluation** (`lib/evaluator.ts`): Implements deterministic risk level mapping with organizational scope caps and single-person guardrails to ensure consistent classification regardless of AI model variations.
+
+### Risk Evaluation Logic
+
+The system uses a hybrid approach:
+1. **AI Analysis**: GPT-4o-mini generates contextual risk scoring dimensions (scope, severity, human_impact, time_sensitivity)
+2. **Deterministic Mapping**: `mapRiskLevel()` function applies consistent business rules to ensure reliable risk classification
+3. **Guardrails**: Organizational scope caps and single-person limits prevent over-classification of routine changes
 
 ---
 
@@ -100,7 +108,8 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
    ```bash
    pnpm lint              # Check code style with ESLint
    pnpm format            # Format code with Prettier
-   pnpm test              # Run test suite
+   pnpm test              # Run comprehensive test suite including risk evaluation edge cases
+   pnpm test:watch        # Run tests in watch mode during development
    pnpm build             # Build for production
    ```
 
