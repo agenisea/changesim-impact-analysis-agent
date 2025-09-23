@@ -16,6 +16,9 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
 - **Output**: Structured JSON that includes a markdown summary, normalized risk level, risk scoring dimensions, decision trace, and curated sources
 - **Why it matters**: Leaders can anticipate challenges _before_ rollout and communicate with empathy.
 
+> **🎯 Value for Leaders**
+> **This tool helps leaders anticipate risks, protect trust, and guide teams through change with empathy.** By understanding human impact before implementation, you can prepare support systems, adjust timelines, and communicate changes in ways that build confidence rather than resistance.
+
 ![Watch the demo](./demo.gif)
 
 ---
@@ -58,7 +61,22 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
 
 ### Risk Evaluation Logic
 
-The system uses a hybrid approach:
+The system uses a hybrid approach with this evaluation flow:
+
+```
+┌─────────────┐    ┌─────────────────┐    ┌─────────────┐    ┌─────────────────┐
+│ AI Analysis │ ──▶│ Deterministic   │ ──▶│ Guardrails  │ ──▶│ Final           │
+│             │    │ Mapping         │    │             │    │ Classification  │
+└─────────────┘    └─────────────────┘    └─────────────┘    └─────────────────┘
+    │                       │                      │                    │
+    │                       │                      │                    │
+    ▼                       ▼                      ▼                    ▼
+Contextual               Business Rules         Scope Caps          Reliable
+Risk Scoring            (mapRiskLevel)         Single-Person        Risk Level
+Dimensions                                     Limits               (Critical/High/
+                                                                   Medium/Low)
+```
+
 1. **AI Analysis**: GPT-4o-mini generates contextual risk scoring dimensions (scope, severity, human_impact, time_sensitivity)
 2. **Deterministic Mapping**: `mapRiskLevel()` function applies consistent business rules to ensure reliable risk classification
 3. **Guardrails**: Organizational scope caps and single-person limits prevent over-classification of routine changes
