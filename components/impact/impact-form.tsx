@@ -6,18 +6,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Loader2, Users, AlertTriangle } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
+import { Loader2, Users, AlertTriangle, Microscope } from 'lucide-react'
 import { ImpactInput } from '@/types/impact'
 
 interface ImpactFormProps {
   initial?: ImpactInput
-  onSubmit: (input: ImpactInput) => Promise<void> | void
+  onSubmit: (input: ImpactInput & { researchMode?: boolean }) => Promise<void> | void
   busy?: boolean
 }
 
 export function ImpactForm({ initial, onSubmit, busy = false }: ImpactFormProps) {
   const [role, setRole] = useState(initial?.role || '')
   const [changeDescription, setChangeDescription] = useState(initial?.changeDescription || '')
+  const [researchMode, setResearchMode] = useState(false)
   const [error, setError] = useState('')
 
   const handleSubmit = async () => {
@@ -30,6 +32,7 @@ export function ImpactForm({ initial, onSubmit, busy = false }: ImpactFormProps)
     await onSubmit({
       role: role.trim(),
       changeDescription: changeDescription.trim(),
+      researchMode,
     })
   }
 
@@ -89,6 +92,28 @@ export function ImpactForm({ initial, onSubmit, busy = false }: ImpactFormProps)
             {error}
           </div>
         )}
+
+        <div className="border-t pt-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Microscope className="w-4 h-4 text-blue-600" />
+              <div>
+                <Label htmlFor="research-mode" className="text-sm font-medium">
+                  Research Mode
+                </Label>
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  Enable principled analysis with organizational dynamics framework
+                </p>
+              </div>
+            </div>
+            <Switch
+              id="research-mode"
+              checked={researchMode}
+              onChange={e => setResearchMode(e.target.checked)}
+              disabled={busy}
+            />
+          </div>
+        </div>
 
         <Button
           onClick={handleSubmit}

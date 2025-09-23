@@ -11,11 +11,19 @@ import {
   type TimeSensitivity as RiskTimeSensitivity,
 } from '@/lib/evaluator'
 import { impactModel } from '@/lib/ai-client'
+import { persistRun, createTracedRun } from '@/lib/runs-store'
+import { startTrace, traced } from '@/lib/tracing-simple'
+import { validateAgainstPrinciples } from '@/lib/organizational-principles'
+import { testAgainstAllPerspectives } from '@/lib/multi-perspective-testing'
+import { ensureHumanCenteredAnalysis } from '@/lib/human-centered-framework'
+import { planNextSteps } from '@/lib/plan/planner'
+import { executePlan, summarizeActions, extractKeyRecommendations } from '@/lib/plan/router'
 
 const impactInputSchema = z.object({
   changeDescription: z.string().min(1, 'Change description is required'),
   role: z.string().min(1, 'Role is required'),
   context: z.any().optional(),
+  researchMode: z.boolean().optional(),
 })
 
 const impactResultSchema = z.object({
@@ -66,8 +74,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: errorMessage }, { status: 400 })
     }
 
-    const { changeDescription, role, context } = validation.data
+    const { changeDescription, role, context, researchMode = false } = validation.data
 
+    // Start tracing for this request
+    const trace = startTrace()
     const runId = `ia_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
 
     // Generate impact analysis using AI SDK with structured outputs
@@ -128,7 +138,130 @@ Return only valid JSON matching the ImpactResult schema.`,
     }
 
     // Result is already validated by generateObject
-    const result: ImpactResult = parsedResult
+    let result: ImpactResult = parsedResult
+
+    // Research Mode: Add principled analysis and planning
+    if (researchMode) {
+      try {
+        console.log('[impact] Running Research Mode analysis')
+
+        // Organizational principles validation
+        const principles = await traced(trace, 'principle_validation', async () =>
+          validateAgainstPrinciples(parsedResult, {
+            role,
+            changeDescription,
+            risk_scoring: parsedResult.risk_scoring,
+            orgSignals: context?.orgSignals || {}
+          })
+        )
+
+        // Multi-perspective stakeholder testing
+        const perspectives = await traced(trace, 'perspective_test', async () =>
+          testAgainstAllPerspectives(parsedResult, { role, changeDescription })
+        )
+
+        // Human-centered analysis
+        const human = await traced(trace, 'human_analysis', async () =>
+          ensureHumanCenteredAnalysis(parsedResult, { changeDescription })
+        )
+
+        // Create diagnostics for planner
+        const diagnostics = {
+          principles: { violations: principles.violations ?? [] },
+          human_centered: { score: human.score, improvements: human.improvements ?? [] },
+          perspectives: { overallScore: perspectives.overallScore, gaps: perspectives.gaps ?? [] },
+          orgSignals: context?.orgSignals ?? {}
+        }
+
+        // Plan next steps
+        const plan = await traced(trace, 'plan_generation', async () =>
+          planNextSteps(diagnostics)
+        )
+
+        // Execute subagents if actions needed
+        let actionResults = null
+        if (plan.signals.some(s => s.kind !== 'none')) {
+          actionResults = await traced(trace, 'subagent_execution', async () =>
+            executePlan(plan, {
+              role,
+              changeDescription,
+              risk_scoring: parsedResult.risk_scoring,
+              diagnostics
+            })
+          )
+        }
+
+        // Enhance result with research data
+        const actionsSummary = actionResults ? summarizeActions(actionResults) : null
+        const keyRecommendations = actionResults ? extractKeyRecommendations(actionResults, 5) : []
+
+        result = {
+          ...result,
+          action_recommendations: keyRecommendations, // Minimal surface for UI
+          research: {
+            trace_id: trace.traceId,
+            principles,
+            perspectives,
+            human_centered: human,
+            plan,
+            actions: actionResults ? {
+              summary: actionsSummary,
+              executed: actionResults.actions,
+              keyRecommendations
+            } : null
+          }
+        } as any // Type assertion for enhanced result
+
+        // Persist run data (fire-and-forget)
+        void persistRun(createTracedRun(trace.traceId, {
+          role,
+          change_desc: changeDescription,
+          risk_level: parsedResult.risk_level,
+          risk_scoring: parsedResult.risk_scoring,
+          principles_result: principles,
+          stakeholder_result: perspectives,
+          human_centered_result: human,
+          decision_trace: parsedResult.decision_trace,
+          plan_result: plan,
+          actions_result: actionResults ? {
+            summary: actionsSummary,
+            executed: actionResults.actions,
+            keyRecommendations
+          } : null,
+          model_meta: {
+            provider: 'openai',
+            model: 'gpt-4',
+            temperature: 0.2,
+            prompt_version: '1.0'
+          },
+          tokens_in: (usage as any).promptTokens || 0,
+          tokens_out: (usage as any).completionTokens || 0,
+          latency_ms: undefined // TODO: Add timing
+        }))
+
+        console.log('[impact] Research Mode analysis completed')
+      } catch (error) {
+        console.error('[impact] Research Mode analysis failed:', error)
+        // Continue with basic result - don't let research mode break the API
+      }
+    } else {
+      // Basic mode: still persist basic run data
+      void persistRun(createTracedRun(trace.traceId, {
+        role,
+        change_desc: changeDescription,
+        risk_level: parsedResult.risk_level,
+        risk_scoring: parsedResult.risk_scoring,
+        decision_trace: parsedResult.decision_trace,
+        model_meta: {
+          provider: 'openai',
+          model: 'gpt-4',
+          temperature: 0.2,
+          prompt_version: '1.0'
+        },
+        tokens_in: (usage as any).promptTokens || 0,
+        tokens_out: (usage as any).completionTokens || 0
+      }))
+    }
 
     console.log('[impact] Impact analysis completed successfully')
     return NextResponse.json(result)
