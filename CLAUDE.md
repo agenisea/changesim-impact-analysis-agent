@@ -213,40 +213,80 @@ refactor: extract shared types and client-side API logic
 - Separate business logic from UI components
 ```
 
-## Prompt History Documentation
+## Session Logging Protocol
 
-When requested to log session prompts, create a new file in `/prompts/` with this format:
+To preserve full fidelity conversation logs and prevent context loss, follow this systematic logging approach:
 
-### File Naming Convention
+### Logging Schedule
 
-`claude-prompt-history-MM-DD-YYYY.prompt`
+**Automatic Triggers** (Claude should proactively export):
+- Every 2 hours during active development
+- Before major architecture changes or refactoring
+- After completing significant milestones (tests passing, deployments)
+- Before approaching context limits
 
-### File Format
+**Manual Triggers**:
+- When user requests logging
+- Before switching focus areas
+- End of development sessions
+
+### File Organization
 
 ```
-# claude-prompt-history-MM-DD-YYYY.prompt
+/prompts/
+  ├── claude-session-01-23-2025.prompt    # Single file per day
+  ├── claude-session-01-24-2025.prompt    # Next day
+  └── claude-prompt-history-*.prompt      # Legacy format (deprecated)
+```
+
+### Session Export Format
+
+**Single Session File** (`claude-session-MM-DD-YYYY.prompt`):
+```
+# claude-session-MM-DD-YYYY.prompt
 # defined: MM-DD-YYYY
 
-This file contains all the prompts used during the [session description].
+This file contains the complete session log for MM-DD-YYYY.
 
-Prompt 1: [Brief Description]
-[Full prompt text]
+================================================================================
+SESSION OVERVIEW
+================================================================================
+Focus: [Brief description of session goals]
+Duration: [Start - End time if known]
+Major Achievements: [Key accomplishments]
 
-Prompt 2: [Brief Description]
-[Full prompt text]
+================================================================================
+FULL CONVERSATION
+================================================================================
+[Complete conversation with all prompts, responses, and technical context]
 
-...
+================================================================================
+FILES MODIFIED
+================================================================================
+[All files created/modified with descriptions]
 
-Summary of Session
-[Brief description of what was accomplished in the session]
+================================================================================
+TECHNICAL DECISIONS
+================================================================================
+[Key architecture choices and rationale]
+
+================================================================================
+NEXT STEPS
+================================================================================
+[Current state, blockers, planned follow-ups]
 ```
 
-### Guidelines
+### Best Practices
 
-- Use comment format (`#`) for filename and date headers
-- Use `MM-DD-YYYY` date format consistently
-- Number prompts sequentially throughout the session
-- Include brief descriptive titles for each prompt
+- **Export early and often** - don't wait for context limits
+- **Scrub sensitive data** before logging (API keys, real org names)
+- **Include full technical context** - decisions, alternatives, implementation details
+- **Document architecture evolution** - rationale for design choices
+- **Preserve debugging sessions** - error messages and resolution steps
+
+### Quick Reference
+
+See `/docs/session-logging-protocol.md` for complete implementation details.
 - Add a summary section at the end describing session outcomes
 - Store all prompt history files in the `/prompts/` directory
 
