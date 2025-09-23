@@ -80,7 +80,9 @@ Dimensions                                     Limits               (Critical/Hi
 1. **AI Analysis**: GPT-4o-mini generates contextual risk scoring dimensions (scope, severity, human_impact, time_sensitivity)
 2. **Deterministic Mapping**: `mapRiskLevel()` function applies consistent business rules to ensure reliable risk classification
 3. **Guardrails**: Organizational scope caps and single-person limits prevent over-classification of routine changes
-
+4. **Final Classification**: Produces a reliable risk level (Critical / High / Medium / Low)  
+   that leaders can use to anticipate impact and plan supportive actions.
+   
 ---
 
 ## 🚀 Setup
