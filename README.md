@@ -17,7 +17,10 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
 - **Why it matters**: Leaders can anticipate challenges _before_ rollout and communicate with empathy.
 
 > **🎯 Value for Leaders**
-> **This tool helps leaders anticipate risks, protect trust, and guide teams through change with empathy.** By understanding human impact before implementation, you can prepare support systems, adjust timelines, and communicate changes in ways that build confidence rather than resistance.
+>
+> ChangeSim helps leaders anticipate risks, protect trust, and guide teams through change with empathy.  
+> By understanding human impact before implementation, you can prepare support systems, adjust timelines,  
+> and communicate in ways that build confidence rather than resistance.
 
 ![Watch the demo](./demo.gif)
 
