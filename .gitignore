@@ -29,3 +29,8 @@ next-env.d.ts
 
 # mac files
 *.DS_Store
+
+# local text files
+*.txt
+*.rtf
+*.prompt
