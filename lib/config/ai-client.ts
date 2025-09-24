@@ -7,6 +7,7 @@
  */
 
 import { openai } from '@ai-sdk/openai'
+import { MODEL } from './constants'
 
 // Shared OpenAI model instance for impact analysis
-export const impactModel = openai('gpt-4o-mini')
+export const impactModel = openai(MODEL)

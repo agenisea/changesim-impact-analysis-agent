@@ -5,11 +5,11 @@ interface Source {
   url: string
 }
 
-interface SourcesListProps {
+interface AnalysisSourcesProps {
   items: Source[]
 }
 
-export function SourcesList({ items }: SourcesListProps) {
+export function AnalysisSources({ items }: AnalysisSourcesProps) {
   if (!items || items.length === 0) {
     return null
   }

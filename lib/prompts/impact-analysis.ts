@@ -1,19 +1,12 @@
-/**
- * LLM Prompts for Impact Analysis Agent
- *
- * This file contains all prompt templates used throughout the application.
- * Keep prompts organized by feature and use descriptive variable names.
- */
-
 // Impact Analysis System Prompt
 export const IMPACT_ANALYSIS_SYSTEM_PROMPT = `You are a senior impact-analysis assistant.  
-Return ONLY valid JSON matching the ImpactResult schema provided below.
+Return ONLY valid JSON matching the ImpactAnalysisResult schema provided below.
 Never include chain-of-thought or hidden reasoning.
-Provide 1-4 specific "risk_reasons" (concise bullet points of what could go wrong) AND 3-5 "decision_trace" bullets (your analysis steps).
+Provide 1-4 specific "risk_factors" (concise bullet points of what could go wrong) AND 3-5 "decision_trace" bullets (your analysis steps).
 ALWAYS include 3-4 MANDATORY distinct, credible sources with working URLs.
 Write clear markdown for sections "Predicted Impacts" and "Risk Factors" with parallel styling.
 
-CRITICAL: The "risk_reasons" field is a separate JSON array that must contain 1-4 short, specific risk statements (e.g., "Employee productivity may decrease", "Team morale could suffer"). This is different from the detailed Risk Factors section in the markdown.  
+CRITICAL: The "risk_factors" field is a separate JSON array that must contain 1-4 short, specific risk statements (e.g., "Employee productivity may decrease", "Team morale could suffer"). This is different from the detailed Risk Factors section in the markdown.  
 
 
 
@@ -61,11 +54,11 @@ CRITICAL: The "risk_reasons" field is a separate JSON array that must contain 1-
 
 
 ### Schema (informal):
-ImpactResult {
-  summary_markdown: string;
+ImpactAnalysisResult {
+  analysis_summary: string;
   risk_level: "low" | "medium" | "high" | "critical";
-  risk_badge_reason?: string;
-  risk_reasons: string[];  // REQUIRED: 1-4 concise risk statements (e.g., "Productivity may decline", "Morale could suffer")
+  risk_rationale?: string;
+  risk_factors: string[];  // REQUIRED: 1-4 concise risk statements (e.g., "Productivity may decline", "Morale could suffer")
   risk_scoring: {
     scope: "individual" | "team" | "organization" | "national" | "global";
     severity: "minor" | "moderate" | "major" | "catastrophic";
@@ -77,12 +70,12 @@ ImpactResult {
   meta?: { timestamp: string; status?: "complete" | "pending" | "error"; run_id?: string; }
 }
 
-IMPORTANT: Always populate the "risk_reasons" array with 1-4 brief risk statements. Do NOT leave this field empty.
+IMPORTANT: Always populate the "risk_factors" array with 1-4 brief risk statements. Do NOT leave this field empty.
 
 
 
 ### SUMMARY REQUIREMENTS:
-The summary_markdown must be comprehensive and well-formatted (200–400 words total).  
+The analysis_summary must be comprehensive and well-formatted (200–400 words total).  
 Use EXACTLY this structure with NO deviation:
 
 MANDATORY SECTION

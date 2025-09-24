@@ -1,34 +1,35 @@
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/ui/utils'
 import { CheckCircle, Clock, XCircle } from 'lucide-react'
+import { ANALYSIS_STATUS, type AnalysisStatus } from '@/lib/config/constants'
 
-export type ArtifactCardProps = {
+export type AnalysisReportWrapperProps = {
   title: string
   subtitle?: string // timestamp
-  status?: 'complete' | 'pending' | 'error'
+  status?: AnalysisStatus
   actions?: { id: string; label: string; onClick?: () => void }[]
   children: React.ReactNode
 }
 
-function StatusIcon({ status }: { status?: 'complete' | 'pending' | 'error' }) {
+function StatusIcon({ status }: { status?: AnalysisStatus }) {
   switch (status) {
-    case 'complete':
+    case ANALYSIS_STATUS.COMPLETE:
       return <CheckCircle className="w-4 h-4 text-green-600" />
-    case 'pending':
+    case ANALYSIS_STATUS.PENDING:
       return <Clock className="w-4 h-4 text-amber-600 animate-pulse" />
-    case 'error':
+    case ANALYSIS_STATUS.ERROR:
       return <XCircle className="w-4 h-4 text-red-600" />
     default:
       return null
   }
 }
 
-export function ArtifactCard({
+export function AnalysisReportWrapper({
   title,
   subtitle,
-  status = 'complete',
+  status = ANALYSIS_STATUS.COMPLETE,
   actions = [],
   children,
-}: ArtifactCardProps) {
+}: AnalysisReportWrapperProps) {
   return (
     <div className="rounded-2xl bg-white dark:bg-slate-800 shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
       {/* Header */}

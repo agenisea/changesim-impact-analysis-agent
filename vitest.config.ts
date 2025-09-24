@@ -3,11 +3,16 @@ import path from 'path'
 
 export default defineConfig({
   test: {
-    environment: 'node',
+    environment: 'jsdom',
+    setupFiles: ['./tests/setup.ts'],
+    globals: true,
   },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, '.'),
     },
+  },
+  esbuild: {
+    jsx: 'automatic',
   },
 })

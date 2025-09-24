@@ -2,17 +2,17 @@
 
 import { useState } from 'react'
 import { Target, Loader2, AlertTriangle } from 'lucide-react'
-import { ImpactForm } from '@/components/impact/impact-form'
-import { ImpactResultWithArtifact } from '@/components/impact/impact-report'
-import { submitImpactAnalysis } from '@/lib/analyze-impact'
-import { ImpactInput, ImpactResult as ImpactResultType } from '@/types/impact'
+import { AnalysisForm } from '@/components/impact-analysis/analysis-form'
+import { AnalysisResultWithArtifact } from '@/components/impact-analysis/analysis-report'
+import { submitImpactAnalysis } from '@/lib/api/impact-analysis'
+import { ImpactAnalysisInput, ImpactAnalysisResult as ImpactResultType } from '@/types/impact-analysis'
 
 export default function ImpactAnalysisPage() {
   const [result, setResult] = useState<ImpactResultType | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const handleSubmit = async (input: ImpactInput) => {
+  const handleSubmit = async (input: ImpactAnalysisInput) => {
     setLoading(true)
     setError('')
     setResult(null)
@@ -56,7 +56,7 @@ export default function ImpactAnalysisPage() {
 
           <div className="flex flex-col xl:flex-row gap-6 xl:gap-8 items-start">
             <div className="w-full xl:w-96 xl:flex-shrink-0">
-              <ImpactForm onSubmit={handleSubmit} busy={loading} />
+              <AnalysisForm onSubmit={handleSubmit} busy={loading} />
             </div>
             <div className="w-full xl:flex-1 min-w-0">
               {loading ? (
@@ -69,7 +69,7 @@ export default function ImpactAnalysisPage() {
                   </div>
                 </div>
               ) : (
-                <ImpactResultWithArtifact result={result} />
+                <AnalysisResultWithArtifact result={result} />
               )}
             </div>
           </div>

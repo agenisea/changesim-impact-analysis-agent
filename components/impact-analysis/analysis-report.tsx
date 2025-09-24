@@ -2,29 +2,30 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { AlertTriangle, Target } from 'lucide-react'
-import { ImpactResult } from '@/types/impact'
-import { ImpactArtifact } from '@/components/impact/impact-artifact'
-import { ArtifactCard } from '@/components/impact/artifact-card'
+import { ImpactAnalysisResult } from '@/types/impact-analysis'
+import { AnalysisReportArtifact } from '@/components/impact-analysis/analysis-report-artifact'
+import { AnalysisReportWrapper } from '@/components/impact-analysis/analysis-report-wrapper'
+import { ANALYSIS_STATUS } from '@/lib/config/constants'
 
-interface ImpactResultWithArtifactProps {
-  result: ImpactResult | null
+interface AnalysisResultWithArtifactProps {
+  result: ImpactAnalysisResult | null
 }
 
-function ImpactReport({ result }: { result: ImpactResult }) {
+function AnalysisReport({ result }: { result: ImpactAnalysisResult }) {
   return (
     <div className="space-y-6">
       {/* AI SDK Format Preview */}
       <div>
-        <ImpactArtifactFilter result={result} />
+        <AnalysisReportPreview result={result} />
       </div>
     </div>
   )
 }
 
-function ImpactArtifactFilter({ result }: { result: ImpactResult }) {
+function AnalysisReportPreview({ result }: { result: ImpactAnalysisResult }) {
   // Return the result directly since it's already in the correct format
-  const createPreviewResult = (): ImpactResult | null => {
-    if (!result.summary_markdown) return null
+  const createPreviewResult = (): ImpactAnalysisResult | null => {
+    if (!result.analysis_summary) return null
     return result
   }
 
@@ -32,32 +33,32 @@ function ImpactArtifactFilter({ result }: { result: ImpactResult }) {
 
   if (!previewResult) {
     return (
-      <ArtifactCard
+      <AnalysisReportWrapper
         title="Enhanced Impact Analysis"
         subtitle="No summary available"
-        status="complete"
+        status={ANALYSIS_STATUS.COMPLETE}
       >
         <p className="text-slate-600 dark:text-slate-400 text-center py-8">
           No summary content available to preview the AI SDK format.
         </p>
-      </ArtifactCard>
+      </AnalysisReportWrapper>
     )
   }
 
   return (
-    <ImpactArtifact
+    <AnalysisReportArtifact
       data={previewResult}
       onRegenerate={undefined}
       onShare={() => console.log('Share clicked')}
       showActions={false}
       role={result.meta?.role}
-      riskFactors={result.risk_reasons || []}
+      riskFactors={result.risk_factors || []}
       proposedChange={result.meta?.changeDescription}
     />
   )
 }
 
-export function ImpactResultWithArtifact({ result }: ImpactResultWithArtifactProps) {
+export function AnalysisResultWithArtifact({ result }: AnalysisResultWithArtifactProps) {
   return (
     <Card className="shadow-lg border-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
       <CardHeader>
@@ -75,7 +76,7 @@ export function ImpactResultWithArtifact({ result }: ImpactResultWithArtifactPro
           </div>
         )}
 
-        {result && <ImpactReport result={result} />}
+        {result && <AnalysisReport result={result} />}
       </CardContent>
     </Card>
   )

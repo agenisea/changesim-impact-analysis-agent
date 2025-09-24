@@ -5,17 +5,23 @@ This file contains coding conventions and guidelines for this Next.js TypeScript
 ## File Naming Conventions
 
 - **Components**: Use kebab-case for all component files (e.g., `impact-form.tsx`, `user-profile.tsx`)
-- **Utilities/Libraries**: Use kebab-case for utility and library files (e.g., `analyze-impact.ts`, `format-date.ts`)
-- **Types**: Use kebab-case for type definition files (e.g., `impact.ts`, `user-types.ts`)
-- **API Routes**: Follow Next.js convention with kebab-case (e.g., `analyze-impact/route.ts`)
+- **Utilities/Libraries**: Use kebab-case for utility and library files (e.g., `impact-analysis.ts`, `format-date.ts`)
+- **Types**: Use kebab-case for type definition files (e.g., `impact-analysis.ts`, `user-types.ts`)
+- **API Routes**: Follow Next.js convention with kebab-case (e.g., `impact-analysis/route.ts`)
 
 ## Project Structure
 
 ```
 /components/           # Reusable UI components (kebab-case)
-  /impact/            # Feature-specific component subfolders
+  /impact-analysis/   # Feature-specific component subfolders
   /ui/                # Generic UI component library
 /lib/                 # Utility functions and business logic (kebab-case)
+  /api/               # Client-side API wrappers
+  /business/          # Core business logic
+  /config/            # Configuration and constants
+  /database/          # Database utilities
+  /prompts/           # AI system prompts
+  /ui/                # UI-specific utilities
 /types/               # Shared TypeScript type definitions (kebab-case)
 /app/                 # Next.js app router pages and API routes
 ```
@@ -67,15 +73,16 @@ interface DisplayProps {
 
 ### Component Naming
 
-- **File names**: Use descriptive, purpose-driven names (e.g., `impact-report.tsx` not `impact-result-with-artifact.tsx`)
-- **Function names**: Match the primary purpose (e.g., `ImpactReport` not `ImpactReportView`)
+- **File names**: Use descriptive, purpose-driven names (e.g., `analysis-report.tsx` not `analysis-result-with-artifact.tsx`)
+- **Function names**: Match the primary purpose (e.g., `AnalysisReport` not `AnalysisReportView`)
 - **Avoid redundant suffixes**: Don't use `-with-artifact`, `-view`, `-component` unless truly necessary
 - **Be specific**: `impact-form.tsx` is better than `form.tsx`
 
 ### Feature Organization
 
-- **Group related files** in feature subdirectories (`/components/impact/`)
-- **Use consistent prefixes** for related components (`impact-form`, `impact-report`, `impact-artifact`)
+- **Group related files** in feature subdirectories (`/components/impact-analysis/`)
+- **Use consistent prefixes** for related components (`analysis-form`, `analysis-report`, `analysis-artifact`)
+- **Use Analysis* naming pattern** for all impact analysis components (e.g., `AnalysisForm`, `AnalysisReport`, `AnalysisRiskBadge`)
 - **Avoid nested folder structures** beyond 2-3 levels deep
 
 ## Import Conventions
@@ -88,9 +95,9 @@ interface DisplayProps {
 ```typescript
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { FeatureForm } from '@/components/feature-form'
-import { processData } from '@/lib/process-data'
-import { DataType } from '@/types/data-type'
+import { AnalysisForm } from '@/components/impact-analysis/analysis-form'
+import { submitImpactAnalysis } from '@/lib/api/impact-analysis'
+import { ImpactAnalysisInput } from '@/types/impact-analysis'
 ```
 
 ## Dependency Management
@@ -107,6 +114,57 @@ import { DataType } from '@/types/data-type'
 - Use meaningful variable and function names
 - Keep components small and focused
 - Extract reusable logic into custom hooks or utility functions
+
+## Security and Data Privacy Guidelines
+
+### Constants and Configuration
+
+- **Single Source of Truth**: All static values must be defined in `lib/constants.ts`
+- **Naming Convention**: Use clean, descriptive names without unnecessary prefixes
+  - ✅ `MODEL`, `TEMPERATURE`, `PROMPT_VERSION`
+  - ❌ `DEFAULT_MODEL`, `DEFAULT_TEMPERATURE`
+- **No Hardcoded Values**: Never use hardcoded strings or numbers in API routes or components
+- **Runtime Values**: Extract actual runtime values from objects (e.g., `impactModel.modelId`) rather than assuming constants
+
+### Data Exposure Rules
+
+- **Never expose sensitive data** in API responses:
+  - ❌ Session IDs (`session_id`)
+  - ❌ Input hashes (`input_hash`)
+  - ❌ Internal database IDs (except public `run_id`)
+  - ❌ Any portion of hash values (not even substring(0, 8))
+- **Safe to expose** in API responses:
+  - ✅ Static values (timestamps, status, role, changeDescription)
+  - ✅ Public identifiers (`run_id`)
+  - ✅ Non-sensitive metadata (`_cache` for transparency)
+
+### Database Logging
+
+- **All fields must use real values**:
+  - ✅ Extract actual model from AI client: `impactModel.modelId`
+  - ✅ Use constants for static config: `TEMPERATURE`, `PROMPT_VERSION`
+  - ✅ Capture real usage data: `usage?.inputTokens`
+  - ❌ No hardcoded strings or placeholder values
+- **Explicit field mapping**: Always set all database fields explicitly, don't rely on defaults
+
+### PII and Sensitive Data
+
+- **Never log or expose**:
+  - User credentials or authentication tokens
+  - Full session identifiers in client responses
+  - Internal system paths or configuration details
+  - Hash values or cryptographic keys
+- **Logging guidelines**:
+  - Server-side logs can contain abbreviated identifiers for debugging
+  - Client-side should receive minimal, safe metadata only
+  - Use `console.log` statements without exposing sensitive values
+
+### Environment Variables
+
+- **Server-only secrets**: Use `SUPABASE_KEY` only in server-side code
+- **Never bundle client-side**: Ensure no secret keys are included in client bundles
+- **Validation**: Always validate environment variables exist with helpful error messages
+- **Build-time safety**: Handle missing env vars gracefully during build process
 
 ## UX and Accessibility Guidelines
 
@@ -159,6 +217,30 @@ import { DataType } from '@/types/data-type'
 
 ## Code Organization Rules
 
+### Constants Management
+
+- **Use constants for magic strings** - Always define reusable string literals in `lib/config/constants.ts`
+- **Cache status consistency** - Use `CACHE_STATUS` constants for both headers and meta fields to ensure identical values
+- **Analysis status consistency** - Use `ANALYSIS_STATUS` constants across API routes and UI components
+- **Single source of truth** - Import constants rather than duplicating string literals across files
+- **Type safety** - Export corresponding TypeScript types (e.g., `CacheStatus`, `AnalysisStatus`) for compile-time validation
+
+Example:
+```typescript
+// lib/config/constants.ts
+export const ANALYSIS_STATUS = {
+  COMPLETE: 'complete',
+  PENDING: 'pending',
+  ERROR: 'error'
+} as const
+
+export type AnalysisStatus = typeof ANALYSIS_STATUS[keyof typeof ANALYSIS_STATUS]
+
+// Usage across codebase
+status: ANALYSIS_STATUS.COMPLETE
+case ANALYSIS_STATUS.PENDING:
+```
+
 ### Dead Code Prevention
 
 - **Remove unused features immediately** - Don't leave dormant code that "might be useful later"
@@ -208,7 +290,7 @@ For large changes, break into logical commits:
 ```bash
 refactor: extract shared types and client-side API logic
 
-- Create ImpactInput and ImpactResult shared types
+- Create ImpactAnalysisInput and ImpactAnalysisResult shared types in types/impact-analysis.ts
 - Extract client-side API wrapper function for impact analysis
 - Separate business logic from UI components
 ```
@@ -323,6 +405,6 @@ pnpm run start
 ### Testing Guidelines
 
 - All business logic should have corresponding tests
-- Focus on testing critical functions like `mapRiskLevel` in `lib/evaluator.ts`
+- Focus on testing critical functions like `mapRiskLevel` in `lib/business/evaluator.ts`
 - Run tests before committing changes
 - Use descriptive test names that explain the expected behavior

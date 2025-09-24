@@ -1,11 +1,11 @@
-import { retryFetch } from '@/lib/utils'
-import { ImpactInput, ImpactResult } from '@/types/impact'
+import { retryFetch } from '@/lib/api/utils'
+import { ImpactAnalysisInput, ImpactAnalysisResult } from '@/types/impact-analysis'
 
 const RETRY_OPTIONS = { maxAttempts: 3, baseDelayMs: 300 }
 
-export async function submitImpactAnalysis(input: ImpactInput): Promise<ImpactResult> {
+export async function submitImpactAnalysis(input: ImpactAnalysisInput): Promise<ImpactAnalysisResult> {
   const response = await retryFetch(
-    '/api/analyze-impact',
+    '/api/impact-analysis',
     {
       method: 'POST',
       headers: {
