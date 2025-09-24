@@ -5,7 +5,7 @@ import { AnalysisSources } from './analysis-sources'
 import { ImpactAnalysisResult } from '@/types/impact-analysis'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { ANALYSIS_STATUS } from '@/lib/config/constants'
+import { ANALYSIS_STATUS } from '@/lib/utils/constants'
 
 export function AnalysisReportArtifact({
   data,

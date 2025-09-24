@@ -1,6 +1,6 @@
-import { cn } from '@/lib/ui/utils'
+import { cn } from '@/lib/client/ui-utils'
 import { CheckCircle, Clock, XCircle } from 'lucide-react'
-import { ANALYSIS_STATUS, type AnalysisStatus } from '@/lib/config/constants'
+import { ANALYSIS_STATUS, type AnalysisStatus } from '@/lib/utils/constants'
 
 export type AnalysisReportWrapperProps = {
   title: string

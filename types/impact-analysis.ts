@@ -1,4 +1,4 @@
-import { type CacheStatus, type AnalysisStatus } from '@/lib/config/constants'
+import { type CacheStatus, type AnalysisStatus } from '@/lib/utils/constants'
 
 export interface ImpactAnalysisInput {
   readonly role: string

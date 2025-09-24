@@ -7,7 +7,7 @@
  */
 
 import { openai } from '@ai-sdk/openai'
-import { MODEL } from './constants'
+import { MODEL } from '@/lib/utils/constants'
 
 // Shared OpenAI model instance for impact analysis
 export const impactModel = openai(MODEL)
