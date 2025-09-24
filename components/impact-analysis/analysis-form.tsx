@@ -7,15 +7,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Loader2, Users, AlertTriangle } from 'lucide-react'
-import { ImpactInput } from '@/types/impact'
+import { ImpactAnalysisInput } from '@/types/impact-analysis'
 
-interface ImpactFormProps {
-  initial?: ImpactInput
-  onSubmit: (input: ImpactInput) => Promise<void> | void
+interface AnalysisFormProps {
+  initial?: ImpactAnalysisInput
+  onSubmit: (input: ImpactAnalysisInput) => Promise<void> | void
   busy?: boolean
 }
 
-export function ImpactForm({ initial, onSubmit, busy = false }: ImpactFormProps) {
+export function AnalysisForm({ initial, onSubmit, busy = false }: AnalysisFormProps) {
   const [role, setRole] = useState(initial?.role || '')
   const [changeDescription, setChangeDescription] = useState(initial?.changeDescription || '')
   const [error, setError] = useState('')

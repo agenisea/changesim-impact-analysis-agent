@@ -39,6 +39,7 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
 - Deterministic risk normalization via `mapRiskLevel`
 - Decision trace and source links to explain model reasoning
 - Copy-to-clipboard artifact optimized for distributing the report
+- **Run logging and analytics** with session-based tracking and recent runs history
 
 ---
 
@@ -47,7 +48,8 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
 - **Framework**: Next.js App Router (15.x) with React 19 and TypeScript (strict mode)
 - **UI**: Tailwind CSS 4, Radix UI, custom artifact components
 - **AI Integration**: Vercel AI SDK (`ai`) with `@ai-sdk/openai` for structured object generation
-- **Risk Logic**: Custom evaluator in `lib/evaluator.ts` with deterministic risk mapping using simplified scope hierarchy (single/team/organization/national/global), organizational scope guardrails, and comprehensive test coverage
+- **Database**: Supabase with PostgreSQL for run logging and session tracking
+- **Risk Logic**: Custom evaluator in `lib/business/evaluator.ts` with deterministic risk mapping using simplified scope hierarchy (single/team/organization/national/global), organizational scope guardrails, and comprehensive test coverage
 - **Testing**: Vitest with focused test suite for risk evaluation logic
 - **Code Quality**: ESLint + Prettier for consistent formatting and style
 - **Deployment**: Optimized for Vercel (see badge), but runs locally with `pnpm dev`
@@ -56,11 +58,11 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
 
 ## 🧠 Architecture Notes
 
-- **API Route** (`app/api/analyze-impact/route.ts`): Handles validation, invokes `generateObject`, applies risk mapping, and returns a typed `ImpactResult` payload.
-- **Client Form** (`components/impact/impact-form.tsx`): Collects user input and triggers analysis with `submitImpactAnalysis`.
-- **Report Rendering** (`components/impact/impact-artifact.tsx`): Displays the structured response, including markdown summary, risk factors, decision trace, and sources.
-- **Types & Schema** (`types/impact.ts`): Shared contracts ensuring the API and UI stay in sync.
-- **Risk Evaluation** (`lib/evaluator.ts`): Implements deterministic risk level mapping with organizational scope caps and single-person guardrails to ensure consistent classification regardless of AI model variations.
+- **API Route** (`app/api/impact-analysis/route.ts`): Handles validation, invokes `generateObject`, applies risk mapping, and returns a typed `ImpactAnalysisResult` payload.
+- **Client Form** (`components/impact-analysis/analysis-form.tsx`): Collects user input and triggers analysis with `submitImpactAnalysis`.
+- **Report Rendering** (`components/impact-analysis/analysis-report-artifact.tsx`): Displays the structured response, including markdown summary, risk factors, decision trace, and sources.
+- **Types & Schema** (`types/impact-analysis.ts`): Shared contracts ensuring the API and UI stay in sync.
+- **Risk Evaluation** (`lib/business/evaluator.ts`): Implements deterministic risk level mapping with organizational scope caps and single-person guardrails to ensure consistent classification regardless of AI model variations.
 
 ### Risk Evaluation Logic
 
@@ -94,6 +96,7 @@ Dimensions                                     Limits               (Critical/Hi
 
 - Node.js and pnpm installed
 - OpenAI API key
+- Supabase project with database access
 
 ### Installation
 
@@ -110,24 +113,38 @@ Dimensions                                     Limits               (Critical/Hi
    pnpm install
    ```
 
-3. **Configure OpenAI API**
+3. **Configure Environment Variables**
    - Copy the example environment file:
      ```bash
      cp .env.local.example .env.local
      ```
    - Get your OpenAI API key from [OpenAI Platform](https://platform.openai.com/api-keys)
-   - Add your API key to `.env.local`:
+   - Set up your Supabase project and get credentials from [Supabase Dashboard](https://supabase.com/dashboard)
+   - Add your keys to `.env.local`:
      ```
      OPENAI_API_KEY=your_actual_api_key_here
+     SUPABASE_URL=your_supabase_project_url
+     SUPABASE_KEY=your_supabase_service_role_key
      ```
 
-4. **Start the development server**
+4. **Set up the database**
+   - Run the SQL migration in your Supabase SQL Editor:
+     ```bash
+     # Copy the contents of database/supabase/changesim_impact_analysis.sql
+     # and execute it in your Supabase SQL Editor
+     ```
+   - Or use the Supabase CLI:
+     ```bash
+     supabase db push
+     ```
+
+5. **Start the development server**
 
    ```bash
    pnpm dev
    ```
 
-5. _(Optional)_ **Run quality checks**
+6. _(Optional)_ **Run quality checks**
    ```bash
    pnpm lint              # Check code style with ESLint
    pnpm format            # Format code with Prettier

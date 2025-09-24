@@ -4,34 +4,34 @@ export type HumanImpact = 'none' | 'limited' | 'significant' | 'mass_casualty'
 export type TimeSensitivity = 'long_term' | 'short_term' | 'immediate' | 'critical'
 export type RiskLabel = 'low' | 'medium' | 'high' | 'critical'
 
-const scopeRank: Record<Scope, number> = {
+const scopeRank: Readonly<Record<Scope, number>> = {
   single: 0,
   team: 1,
   organization: 2,
   national: 3,
   global: 4,
-}
+} as const
 
-const severityRank: Record<Severity, number> = {
+const severityRank: Readonly<Record<Severity, number>> = {
   minor: 0,
   moderate: 1,
   major: 2,
   catastrophic: 3,
-}
+} as const
 
-const humanRank: Record<HumanImpact, number> = {
+const humanRank: Readonly<Record<HumanImpact, number>> = {
   none: 0,
   limited: 1,
   significant: 2,
   mass_casualty: 3,
-}
+} as const
 
-const timeRank: Record<TimeSensitivity, number> = {
+const timeRank: Readonly<Record<TimeSensitivity, number>> = {
   long_term: 0,
   short_term: 1,
   immediate: 2,
   critical: 3,
-}
+} as const
 
 export function mapRiskLevel(
   scope: Scope,

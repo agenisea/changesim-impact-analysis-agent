@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mapRiskLevel } from '@/lib/evaluator'
+import { mapRiskLevel } from '@/lib/business/evaluator'
 
 describe('mapRiskLevel', () => {
   it('T1 — critical (catastrophic)', () => {

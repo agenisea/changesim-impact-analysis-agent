@@ -1,8 +1,8 @@
-interface DecisionTraceProps {
+interface AnalysisDecisionTraceProps {
   items: string[]
 }
 
-export function DecisionTrace({ items }: DecisionTraceProps) {
+export function AnalysisDecisionTrace({ items }: AnalysisDecisionTraceProps) {
   if (!items || items.length === 0) {
     return null
   }

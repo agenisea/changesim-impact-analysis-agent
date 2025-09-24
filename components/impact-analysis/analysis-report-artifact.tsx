@@ -1,12 +1,13 @@
-import { ArtifactCard } from './artifact-card'
-import { RiskBadge } from './risk-badge'
-import { DecisionTrace } from './decision-trace'
-import { SourcesList } from './sources-list'
-import { ImpactResult } from '@/types/impact'
+import { AnalysisReportWrapper } from './analysis-report-wrapper'
+import { AnalysisRiskBadge } from './analysis-risk-badge'
+import { AnalysisDecisionTrace } from './analysis-decision-trace'
+import { AnalysisSources } from './analysis-sources'
+import { ImpactAnalysisResult } from '@/types/impact-analysis'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { ANALYSIS_STATUS } from '@/lib/config/constants'
 
-export function ImpactArtifact({
+export function AnalysisReportArtifact({
   data,
   onRegenerate,
   onShare,
@@ -15,7 +16,7 @@ export function ImpactArtifact({
   riskFactors,
   proposedChange,
 }: {
-  data: ImpactResult
+  data: ImpactAnalysisResult
   onRegenerate?: () => void
   onShare?: () => void
   showActions?: boolean
@@ -53,7 +54,7 @@ export function ImpactArtifact({
     }
 
     // Add Summary
-    content += `## Executive Summary\n\n${data.summary_markdown}\n\n`
+    content += `## Executive Summary\n\n${data.analysis_summary}\n\n`
 
     // Add Decision Trace
     if (data.decision_trace?.length) {
@@ -77,7 +78,7 @@ export function ImpactArtifact({
 
     // Add footer
     content += `---\n\n`
-    content += `*This report was generated using the Impact Analysis Agent*`
+    content += `*This report was generated using the ChangeSim Impact Analysis Agent*`
 
     try {
       await navigator.clipboard.writeText(content)
@@ -88,10 +89,10 @@ export function ImpactArtifact({
   }
 
   return (
-    <ArtifactCard
+    <AnalysisReportWrapper
       title="Report"
       subtitle={new Date(data.meta?.timestamp ?? Date.now()).toLocaleString()}
-      status={data.meta?.status ?? 'complete'}
+      status={data.meta?.status ?? ANALYSIS_STATUS.COMPLETE}
       actions={
         showActions
           ? [
@@ -116,7 +117,7 @@ export function ImpactArtifact({
                 <h4 className="font-semibold text-slate-900 dark:text-slate-100">
                   Proposed Change:
                 </h4>
-                <RiskBadge level={data.risk_level} reason={data.risk_badge_reason} />
+                <AnalysisRiskBadge level={data.risk_level} reason={data.risk_rationale} />
               </div>
               <p className="font-semibold text-slate-700 dark:text-slate-300 text-sm leading-relaxed">
                 {proposedChange}
@@ -153,7 +154,7 @@ export function ImpactArtifact({
       {/* Original Risk Badge (only show if no role provided) */}
       {!role && (
         <div className="flex items-start justify-between gap-3 mb-4">
-          <RiskBadge level={data.risk_level} reason={data.risk_badge_reason} />
+          <AnalysisRiskBadge level={data.risk_level} reason={data.risk_rationale} />
         </div>
       )}
 
@@ -172,22 +173,22 @@ export function ImpactArtifact({
               ),
             }}
           >
-            {data.summary_markdown}
+            {data.analysis_summary}
           </ReactMarkdown>
         </div>
       </div>
 
       {data.decision_trace?.length ? (
         <div className="mt-6">
-          <DecisionTrace items={data.decision_trace} />
+          <AnalysisDecisionTrace items={data.decision_trace} />
         </div>
       ) : null}
 
       {data.sources?.length ? (
         <div className="mt-6">
-          <SourcesList items={data.sources} />
+          <AnalysisSources items={data.sources} />
         </div>
       ) : null}
-    </ArtifactCard>
+    </AnalysisReportWrapper>
   )
 }

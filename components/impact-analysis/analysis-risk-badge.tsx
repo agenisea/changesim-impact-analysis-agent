@@ -3,12 +3,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 type RiskLevel = 'low' | 'medium' | 'high' | 'critical'
 
-interface RiskBadgeProps {
+interface AnalysisRiskBadgeProps {
   level: RiskLevel
   reason?: string
 }
 
-const riskConfigs = {
+const analysisRiskConfigs = {
   low: {
     icon: Shield,
     text: 'Low Risk',
@@ -39,8 +39,8 @@ const riskConfigs = {
   },
 }
 
-export function RiskBadge({ level, reason }: RiskBadgeProps) {
-  const config = riskConfigs[level]
+export function AnalysisRiskBadge({ level, reason }: AnalysisRiskBadgeProps) {
+  const config = analysisRiskConfigs[level]
   const Icon = config.icon
 
   const badge = (
