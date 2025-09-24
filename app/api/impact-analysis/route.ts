@@ -13,8 +13,8 @@ import { makeInputHash } from '@/lib/utils/hash'
 import { PROMPT_VERSION, PROCESS_NAME, TEMPERATURE, MAX_OUTPUT_TOKENS, CACHE_STATUS, ANALYSIS_STATUS, type CacheStatus } from '@/lib/utils/constants'
 
 const impactAnalysisInputSchema = z.object({
-  changeDescription: z.string().min(1, 'Change description is required'),
-  role: z.string().min(1, 'Role is required'),
+  changeDescription: z.string().trim().min(1, 'Change description is required'),
+  role: z.string().trim().min(1, 'Role is required'),
   context: z.any().optional(),
   forceFresh: z.boolean().optional(),
 })
