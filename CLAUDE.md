@@ -15,15 +15,17 @@ This file contains coding conventions and guidelines for this Next.js TypeScript
 /components/           # Reusable UI components (kebab-case)
   /impact-analysis/   # Feature-specific component subfolders
   /ui/                # Generic UI component library
-/lib/                 # Utility functions and business logic (kebab-case)
-  /api/               # Client-side API wrappers
-  /business/          # Core business logic
-  /config/            # Configuration and constants
-  /database/          # Database utilities
-  /prompts/           # AI system prompts
-  /ui/                # UI-specific utilities
+/lib/                 # Organized by subdomain (kebab-case)
+  /ai/                # AI/LLM configuration, prompts, model setup
+  /business/          # Core business logic and evaluators
+  /client/            # Browser-side utilities (UI utils, client API wrappers)
+  /db/                # Database clients and queries
+  /server/            # Server-only utilities (session management, logging)
+  /utils/             # Shared utilities (constants, hashing, retry logic)
 /types/               # Shared TypeScript type definitions (kebab-case)
 /app/                 # Next.js app router pages and API routes
+/database/            # SQL schemas, migrations, functions
+  /functions/         # Future SQL functions (RPCs, FTS, vector search)
 ```
 
 ## Component Guidelines
@@ -91,14 +93,30 @@ interface DisplayProps {
 - Group imports: external libraries first, then internal modules
 - Use kebab-case in import paths to match file names
 - **Remove unused imports** immediately to keep bundle size optimal
+- **Import from specific subdomain paths** for better organization:
 
 ```typescript
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { AnalysisForm } from '@/components/impact-analysis/analysis-form'
-import { submitImpactAnalysis } from '@/lib/api/impact-analysis'
+import { submitImpactAnalysis } from '@/lib/client/impact-analysis'
+import { impactModel } from '@/lib/ai/ai-client'
+import { ANALYSIS_STATUS } from '@/lib/utils/constants'
+import { mapRiskLevel } from '@/lib/business/evaluator'
+import { sb } from '@/lib/db/db'
+import { getSessionIdCookie } from '@/lib/server/session'
+import { cn } from '@/lib/client/ui-utils'
 import { ImpactAnalysisInput } from '@/types/impact-analysis'
 ```
+
+### Subdomain Import Guidelines
+
+- **`@/lib/ai/*`**: AI/LLM prompts, model configuration, AI client setup
+- **`@/lib/business/*`**: Core business logic, risk evaluation, data transformations
+- **`@/lib/client/*`**: Browser-safe utilities, client-side API wrappers, UI utilities
+- **`@/lib/db/*`**: Database clients, queries, schema types
+- **`@/lib/server/*`**: Server-only utilities (session management, logging)
+- **`@/lib/utils/*`**: Shared utilities (constants, hashing, retry logic)
 
 ## Dependency Management
 
@@ -119,7 +137,7 @@ import { ImpactAnalysisInput } from '@/types/impact-analysis'
 
 ### Constants and Configuration
 
-- **Single Source of Truth**: All static values must be defined in `lib/constants.ts`
+- **Single Source of Truth**: All static values must be defined in `lib/utils/constants.ts`
 - **Naming Convention**: Use clean, descriptive names without unnecessary prefixes
   - ✅ `MODEL`, `TEMPERATURE`, `PROMPT_VERSION`
   - ❌ `DEFAULT_MODEL`, `DEFAULT_TEMPERATURE`

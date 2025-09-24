@@ -2,19 +2,15 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { generateObject } from 'ai'
 import { type ImpactAnalysisResult } from '@/types/impact-analysis'
 import { z } from 'zod'
-import { IMPACT_ANALYSIS_SYSTEM_PROMPT } from '@/lib/prompts/impact-analysis'
-import {
-  mapRiskLevel,
-  type Scope as RiskScope,
-  type Severity as RiskSeverity,
-  type HumanImpact as RiskHumanImpact,
-  type TimeSensitivity as RiskTimeSensitivity,
-} from '@/lib/business/evaluator'
-import { impactModel } from '@/lib/config/ai-client'
-import { sb, type ChangeSimImpactAnalysisRunInsert } from '@/lib/database/db'
-import { getSessionIdCookie } from '@/lib/database/session'
-import { makeInputHash } from '@/lib/business/hash'
-import { PROMPT_VERSION, PROCESS_NAME, TEMPERATURE, MAX_OUTPUT_TOKENS, CACHE_STATUS, ANALYSIS_STATUS, type CacheStatus } from '@/lib/config/constants'
+import { IMPACT_ANALYSIS_SYSTEM_PROMPT } from '@/lib/ai/impact-analysis'
+import { mapRiskLevel } from '@/lib/business/evaluator'
+import { normalizeRiskScoring } from '@/lib/business/normalize'
+import { appendSystemNoteWithBounds, boundDecisionTrace } from '@/lib/business/decision-trace'
+import { impactModel } from '@/lib/ai/ai-client'
+import { sb, type ChangeSimImpactAnalysisRunInsert } from '@/lib/db/db'
+import { getSessionIdCookie } from '@/lib/server/session'
+import { makeInputHash } from '@/lib/utils/hash'
+import { PROMPT_VERSION, PROCESS_NAME, TEMPERATURE, MAX_OUTPUT_TOKENS, CACHE_STATUS, ANALYSIS_STATUS, type CacheStatus } from '@/lib/utils/constants'
 
 const impactAnalysisInputSchema = z.object({
   changeDescription: z.string().min(1, 'Change description is required'),
@@ -162,24 +158,28 @@ Return only valid JSON matching the ImpactAnalysisResult schema.`,
     console.log('[impact] AI response received')
     console.log('[impact] Token usage:', usage)
 
-    // Apply deterministic risk mapping
-    const { scope, severity, human_impact, time_sensitivity } = parsedResult.risk_scoring
-    const normalizedScope = (scope === 'individual' ? 'single' : scope) as RiskScope
+    // Apply deterministic risk mapping with proper enum normalization
+    const normalizedRiskScoring = normalizeRiskScoring(parsedResult.risk_scoring)
     const riskResult = mapRiskLevel(
-      normalizedScope,
-      severity as RiskSeverity,
-      human_impact as RiskHumanImpact,
-      time_sensitivity as RiskTimeSensitivity
+      normalizedRiskScoring.scope,
+      normalizedRiskScoring.severity,
+      normalizedRiskScoring.human_impact,
+      normalizedRiskScoring.time_sensitivity
     )
     parsedResult.risk_level = riskResult.level
 
-    // Add org-cap decision trace note when triggered
+    // Add org-cap decision trace note when triggered (with bounds checking)
     if (riskResult.orgCapTriggered && parsedResult.decision_trace) {
       const guardrailNote = 'Risk level adjusted downward due to organizational scope guardrail'
-      const keptCount = Math.min(parsedResult.decision_trace.length, 4)
-      const trace = parsedResult.decision_trace.slice(0, keptCount)
-      trace.push(guardrailNote)
-      parsedResult.decision_trace = trace
+      parsedResult.decision_trace = appendSystemNoteWithBounds(
+        parsedResult.decision_trace,
+        guardrailNote
+      )
+    }
+
+    // Ensure decision trace is always within bounds (defense in depth)
+    if (parsedResult.decision_trace) {
+      parsedResult.decision_trace = boundDecisionTrace(parsedResult.decision_trace)
     }
 
 

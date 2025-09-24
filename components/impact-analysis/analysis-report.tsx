@@ -5,7 +5,7 @@ import { AlertTriangle, Target } from 'lucide-react'
 import { ImpactAnalysisResult } from '@/types/impact-analysis'
 import { AnalysisReportArtifact } from '@/components/impact-analysis/analysis-report-artifact'
 import { AnalysisReportWrapper } from '@/components/impact-analysis/analysis-report-wrapper'
-import { ANALYSIS_STATUS } from '@/lib/config/constants'
+import { ANALYSIS_STATUS } from '@/lib/utils/constants'
 
 interface AnalysisResultWithArtifactProps {
   result: ImpactAnalysisResult | null
@@ -49,7 +49,7 @@ function AnalysisReportPreview({ result }: { result: ImpactAnalysisResult }) {
     <AnalysisReportArtifact
       data={previewResult}
       onRegenerate={undefined}
-      onShare={() => console.log('Share clicked')}
+      onShare={() => {}}
       showActions={false}
       role={result.meta?.role}
       riskFactors={result.risk_factors || []}

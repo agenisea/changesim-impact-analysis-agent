@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Target, Loader2, AlertTriangle } from 'lucide-react'
 import { AnalysisForm } from '@/components/impact-analysis/analysis-form'
 import { AnalysisResultWithArtifact } from '@/components/impact-analysis/analysis-report'
-import { submitImpactAnalysis } from '@/lib/api/impact-analysis'
+import { submitImpactAnalysis } from '@/lib/client/impact-analysis'
 import { ImpactAnalysisInput, ImpactAnalysisResult as ImpactResultType } from '@/types/impact-analysis'
 
 export default function ImpactAnalysisPage() {

@@ -48,44 +48,61 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
 - **Framework**: Next.js App Router (15.x) with React 19 and TypeScript (strict mode)
 - **UI**: Tailwind CSS 4, Radix UI, custom artifact components
 - **AI Integration**: Vercel AI SDK (`ai`) with `@ai-sdk/openai` for structured object generation
-- **Database**: Supabase with PostgreSQL for run logging and session tracking
-- **Risk Logic**: Custom evaluator in `lib/business/evaluator.ts` with deterministic risk mapping using simplified scope hierarchy (single/team/organization/national/global), organizational scope guardrails, and comprehensive test coverage
-- **Testing**: Vitest with focused test suite for risk evaluation logic
-- **Code Quality**: ESLint + Prettier for consistent formatting and style
+- **Database**: Supabase with PostgreSQL for run logging, session tracking, and caching
+- **Architecture**: Domain-driven folder structure with clear separation of concerns
+  - `lib/ai/`: AI model configuration and prompts
+  - `lib/business/`: Core business logic, risk evaluation, and data normalization
+  - `lib/client/`: Browser-safe utilities and UI helpers
+  - `lib/server/`: Server-only utilities (session management)
+  - `lib/db/`: Database clients and queries
+- **Risk Logic**: Multi-layered evaluation system with enum normalization, decision trace bounds, and guardrails
+- **Testing**: Comprehensive test suite (89+ tests) with domain-organized structure covering business logic, API integration, and UI components
+- **Code Quality**: ESLint + Prettier with strict TypeScript and kebab-case naming conventions
 - **Deployment**: Optimized for Vercel (see badge), but runs locally with `pnpm dev`
 
 ---
 
 ## 🧠 Architecture Notes
 
-- **API Route** (`app/api/impact-analysis/route.ts`): Handles validation, invokes `generateObject`, applies risk mapping, and returns a typed `ImpactAnalysisResult` payload.
-- **Client Form** (`components/impact-analysis/analysis-form.tsx`): Collects user input and triggers analysis with `submitImpactAnalysis`.
-- **Report Rendering** (`components/impact-analysis/analysis-report-artifact.tsx`): Displays the structured response, including markdown summary, risk factors, decision trace, and sources.
-- **Types & Schema** (`types/impact-analysis.ts`): Shared contracts ensuring the API and UI stay in sync.
-- **Risk Evaluation** (`lib/business/evaluator.ts`): Implements deterministic risk level mapping with organizational scope caps and single-person guardrails to ensure consistent classification regardless of AI model variations.
+### Core Components
+- **API Route** (`app/api/impact-analysis/route.ts`): Handles validation, invokes `generateObject`, applies risk mapping with normalization and bounds checking, includes session-based caching
+- **Client Form** (`components/impact-analysis/analysis-form.tsx`): Collects user input and triggers analysis with `submitImpactAnalysis`
+- **Report Rendering** (`components/impact-analysis/analysis-report-artifact.tsx`): Displays structured response with copy-to-clipboard functionality
+- **Types & Schema** (`types/impact-analysis.ts`): Shared contracts ensuring API and UI stay in sync
+
+### Business Logic Layer
+- **Risk Evaluation** (`lib/business/evaluator.ts`): Deterministic risk mapping with organizational guardrails
+- **Enum Normalization** (`lib/business/normalize.ts`): Prevents silent fallbacks by normalizing schema enums to evaluator expectations
+- **Decision Trace Bounds** (`lib/business/decision-trace.ts`): Prevents prompt drift by enforcing schema limits when system notes are added
+
+### Data Persistence
+- **Session-based Caching**: Reduces token costs by caching identical requests within sessions
+- **Run Logging**: Full analysis runs stored in Supabase for analytics and debugging
+- **Input Hashing**: Deterministic cache keys based on normalized inputs
 
 ### Risk Evaluation Logic
 
 The system uses a hybrid approach with this evaluation flow:
 
 ```
-┌─────────────┐    ┌─────────────────┐    ┌─────────────┐    ┌─────────────────┐
-│ AI Analysis │ ──▶│ Deterministic   │ ──▶│ Guardrails  │ ──▶│ Final           │
-│             │    │ Mapping         │    │             │    │ Classification  │
-└─────────────┘    └─────────────────┘    └─────────────┘    └─────────────────┘
-    │                       │                      │                    │
-    │                       │                      │                    │
-    ▼                       ▼                      ▼                    ▼
-Contextual               Business Rules         Scope Caps          Reliable
-Risk Scoring            (mapRiskLevel)         Single-Person        Risk Level
-Dimensions                                     Limits               (Critical/High/
-                                                                   Medium/Low)
+┌─────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────┐    ┌─────────────────┐
+│ AI Analysis │ ──▶│ Enum            │ ──▶│ Deterministic   │ ──▶│ Guardrails  │ ──▶│ Final           │
+│             │    │ Normalization   │    │ Mapping         │    │ & Bounds    │    │ Classification  │
+└─────────────┘    └─────────────────┘    └─────────────────┘    └─────────────┘    └─────────────────┘
+    │                       │                      │                    │                    │
+    │                       │                      │                    │                    │
+    ▼                       ▼                      ▼                    ▼                    ▼
+Contextual               Schema-to-           Business Rules         Scope Caps          Reliable
+Risk Scoring            Evaluator            (mapRiskLevel)         Decision Trace      Risk Level
+Dimensions              Alignment                                   Bounds              (Critical/High/
+                        (normalize.ts)                              (decision-trace.ts) Medium/Low)
 ```
 
 1. **AI Analysis**: GPT-4o-mini generates contextual risk scoring dimensions (scope, severity, human_impact, time_sensitivity)
-2. **Deterministic Mapping**: `mapRiskLevel()` function applies consistent business rules to ensure reliable risk classification
-3. **Guardrails**: Organizational scope caps and single-person limits prevent over-classification of routine changes
-4. **Final Classification**: Produces a reliable risk level (Critical / High / Medium / Low)  
+2. **Enum Normalization**: `normalize.ts` aligns schema enums with evaluator expectations to prevent silent fallbacks
+3. **Deterministic Mapping**: `mapRiskLevel()` function applies consistent business rules to ensure reliable risk classification
+4. **Guardrails & Bounds**: Organizational scope caps, single-person limits, and decision trace bounds (`decision-trace.ts`) prevent over-classification and prompt drift
+5. **Final Classification**: Produces a reliable risk level (Critical / High / Medium / Low)
    that leaders can use to anticipate impact and plan supportive actions.
    
 ---
