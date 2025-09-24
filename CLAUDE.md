@@ -327,7 +327,8 @@ To preserve full fidelity conversation logs and prevent context loss, follow thi
 - Every 2 hours during active development
 - Before major architecture changes or refactoring
 - After completing significant milestones (tests passing, deployments)
-- Before approaching context limits
+- **CRITICAL**: Before approaching context limits or session compression
+- **MANDATORY**: Before any conversation summarization or compacting
 
 **Manual Triggers**:
 - When user requests logging
@@ -338,16 +339,22 @@ To preserve full fidelity conversation logs and prevent context loss, follow thi
 
 ```
 /prompts/
-  ├── claude-session-01-23-2025.prompt    # Single file per day
-  ├── claude-session-01-24-2025.prompt    # Next day
+  ├── claude-session-01-23-2025.txt       # Single file per day (use .txt extension)
+  ├── claude-session-01-24-2025.txt       # Next day
   └── claude-prompt-history-*.prompt      # Legacy format (deprecated)
 ```
 
+**IMPORTANT**: Always use format `claude-session-MM-DD-YYYY.txt` - this ensures:
+- Consistent naming across all sessions
+- Easy chronological sorting and discovery
+- Platform-independent text file format
+- Integration with version control systems
+
 ### Session Export Format
 
-**Single Session File** (`claude-session-MM-DD-YYYY.prompt`):
+**Single Session File** (`claude-session-MM-DD-YYYY.txt`):
 ```
-# claude-session-MM-DD-YYYY.prompt
+# claude-session-MM-DD-YYYY.txt
 # defined: MM-DD-YYYY
 
 This file contains the complete session log for MM-DD-YYYY.
@@ -383,10 +390,13 @@ NEXT STEPS
 ### Best Practices
 
 - **Export early and often** - don't wait for context limits
+- **CRITICAL: Preserve before compression** - Always create claude-session-MM-DD-YYYY.txt files before any conversation summarization, compacting, or context compression
+- **Complete technical fidelity** - Capture full conversation, not summaries or compressed versions
 - **Scrub sensitive data** before logging (API keys, real org names)
 - **Include full technical context** - decisions, alternatives, implementation details
 - **Document architecture evolution** - rationale for design choices
 - **Preserve debugging sessions** - error messages and resolution steps
+- **Historical reference integrity** - Ensure future reviewers can track evolution to understand complete decision-making process
 
 ### Quick Reference
 
