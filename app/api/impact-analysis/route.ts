@@ -70,7 +70,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       if (SHOW_DEBUG_LOGS) {
         console.log('[impact] Validation failed:', errorMessage)
       }
-      return NextResponse.json({ error: errorMessage }, { status: 400 })
+      return NextResponse.json({ error: errorMessage }, { status: 422 })
     }
 
     const { changeDescription, role, context, forceFresh } = validation.data
@@ -338,7 +338,14 @@ Return only valid JSON matching the ImpactAnalysisResult schema.`,
     })
 
     const errorMessage = (error as Error).message
-    if (errorMessage.includes('429')) {
+
+    // Handle schema validation errors from AI response
+    if (errorMessage.includes('schema') || errorMessage.includes('validation') || errorMessage.includes('parse')) {
+      return NextResponse.json(
+        { error: 'AI response format validation failed. Please try again.' },
+        { status: 502 }
+      )
+    } else if (errorMessage.includes('429')) {
       return NextResponse.json(
         {
           error: 'AI service rate limit exceeded. Please try again in a few moments.',
@@ -348,7 +355,7 @@ Return only valid JSON matching the ImpactAnalysisResult schema.`,
     } else if (errorMessage.includes('API')) {
       return NextResponse.json(
         { error: 'AI service temporarily unavailable. Please try again.' },
-        { status: 503 }
+        { status: 502 }
       )
     } else {
       return NextResponse.json(
