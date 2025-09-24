@@ -125,7 +125,7 @@ describe('API Route: /api/impact-analysis', () => {
         const request = createMockRequest(invalidInput)
         const response = await POST(request)
 
-        expect(response.status).toBe(400)
+        expect(response.status).toBe(422)
         const body = await response.json()
         expect(body).toHaveProperty('error')
         expect(typeof body.error).toBe('string')
@@ -379,7 +379,7 @@ describe('API Route: /api/impact-analysis', () => {
       expect(body.error).toContain('rate limit')
     })
 
-    it('should handle AI service unavailability (503)', async () => {
+    it('should handle AI service unavailability (502)', async () => {
       mockGetSession.mockResolvedValue({
         sessionId: 'test-session-123',
         isNewSession: false
@@ -406,9 +406,41 @@ describe('API Route: /api/impact-analysis', () => {
       const request = createMockRequest(validInput)
       const response = await POST(request)
 
-      expect(response.status).toBe(503)
+      expect(response.status).toBe(502)
       const body = await response.json()
       expect(body.error).toContain('temporarily unavailable')
+    })
+
+    it('should handle AI response schema validation errors (502)', async () => {
+      mockGetSession.mockResolvedValue({
+        sessionId: 'test-session-123',
+        isNewSession: false
+      })
+
+      mockDb.from = vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockReturnValue({
+                limit: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null })
+                })
+              })
+            })
+          })
+        })
+      }) as any
+
+      // Mock schema validation error from AI
+      mockGenerateObject.mockRejectedValue(new Error('schema validation failed for response'))
+
+      const validInput = validInputFixtures[0]!
+      const request = createMockRequest(validInput)
+      const response = await POST(request)
+
+      expect(response.status).toBe(502)
+      const body = await response.json()
+      expect(body.error).toContain('AI response format validation failed')
     })
 
     it('should handle generic server errors (500)', async () => {

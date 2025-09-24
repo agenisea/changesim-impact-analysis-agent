@@ -56,7 +56,7 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
   - `lib/server/`: Server-only utilities (session management)
   - `lib/db/`: Database clients and queries
 - **Risk Logic**: Multi-layered evaluation system with enum normalization, decision trace bounds, and guardrails
-- **Testing**: Comprehensive test suite (89+ tests) with domain-organized structure covering business logic, API integration, and UI components
+- **Testing**: Comprehensive test suite (90 tests) with domain-organized structure covering business logic, API integration, and UI components
 - **Code Quality**: ESLint + Prettier with strict TypeScript and kebab-case naming conventions
 - **Deployment**: Optimized for Vercel (see badge), but runs locally with `pnpm dev`
 
