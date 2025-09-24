@@ -78,7 +78,7 @@ export function AnalysisReportArtifact({
 
     // Add footer
     content += `---\n\n`
-    content += `*This report was generated using the Impact Analysis Agent*`
+    content += `*This report was generated using the ChangeSim Impact Analysis Agent*`
 
     try {
       await navigator.clipboard.writeText(content)

@@ -3,7 +3,7 @@
  */
 
 // LLM prompt version for tracking prompt iterations
-export const PROMPT_VERSION = 'v0.3'
+export const PROMPT_VERSION = 'v0.1'
 
 // Default process identifier for run logging
 export const PROCESS_NAME = 'changesim_impact_analysis_v1'
