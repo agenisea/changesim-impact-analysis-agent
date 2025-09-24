@@ -142,6 +142,8 @@ Dimensions              Alignment                                   Bounds      
      OPENAI_API_KEY=your_actual_api_key_here
      SUPABASE_URL=your_supabase_project_url
      SUPABASE_KEY=your_supabase_service_role_key
+     # Optional: Enable verbose debug logging (default: false)
+     SHOW_DEBUG_LOGS=true
      ```
 
 4. **Set up the database**

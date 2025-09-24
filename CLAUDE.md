@@ -183,6 +183,10 @@ import { ImpactAnalysisInput } from '@/types/impact-analysis'
 - **Never bundle client-side**: Ensure no secret keys are included in client bundles
 - **Validation**: Always validate environment variables exist with helpful error messages
 - **Build-time safety**: Handle missing env vars gracefully during build process
+- **Debug logging control**: Use `SHOW_DEBUG_LOGS=true` to enable verbose logging in development
+  - **Default**: `false` - Production-safe logging with no user input or sensitive data exposure
+  - **Debug mode**: `true` - Full request/response logging, cache details, and internal state
+  - **Security**: Always wrap debug logs with `if (SHOW_DEBUG_LOGS)` conditional checks
 
 ## UX and Accessibility Guidelines
 

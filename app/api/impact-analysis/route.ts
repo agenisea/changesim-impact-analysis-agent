@@ -12,6 +12,8 @@ import { getSessionIdCookie } from '@/lib/server/session'
 import { makeInputHash } from '@/lib/utils/hash'
 import { PROMPT_VERSION, PROCESS_NAME, TEMPERATURE, MAX_OUTPUT_TOKENS, CACHE_STATUS, ANALYSIS_STATUS, type CacheStatus } from '@/lib/utils/constants'
 
+const SHOW_DEBUG_LOGS = process.env.SHOW_DEBUG_LOGS === 'true'
+
 const impactAnalysisInputSchema = z.object({
   changeDescription: z.string().trim().min(1, 'Change description is required'),
   role: z.string().trim().min(1, 'Role is required'),
@@ -55,7 +57,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     console.log('[impact] API route called')
 
     const body = await request.json()
-    console.log('[impact] Request data:', body)
+    if (SHOW_DEBUG_LOGS) {
+      console.log('[impact] Request data:', body)
+    }
 
     // Validate input
     const validation = impactAnalysisInputSchema.safeParse(body)
@@ -63,7 +67,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       const errorMessage = validation.error.issues
         .map((err: any) => `${err.path.join('.')}: ${err.message}`)
         .join(', ')
-      console.log('[impact] Validation failed:', errorMessage)
+      if (SHOW_DEBUG_LOGS) {
+        console.log('[impact] Validation failed:', errorMessage)
+      }
       return NextResponse.json({ error: errorMessage }, { status: 400 })
     }
 
@@ -89,7 +95,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // 1) Cache lookup: SAME session + SAME inputs + SAME model/prompt
     // Skip cache check for new sessions since no runs could exist yet
     if (!forceFresh && !isNewSession) {
-      console.log('[impact] Checking cache for existing session')
+      if (SHOW_DEBUG_LOGS) {
+        console.log('[impact] Checking cache for existing session')
+      }
 
       const { data: cached, error: cacheError } = await sb
         .from('changesim_impact_analysis_runs')
@@ -104,7 +112,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         console.error('[impact] Cache lookup error:', cacheError)
         // Continue to fresh analysis
       } else if (cached) {
-        console.log('[impact] Cache hit! Returning cached result')
+        if (SHOW_DEBUG_LOGS) {
+          console.log('[impact] Cache hit! Returning cached result')
+        }
 
         // Transform cached data to match expected ImpactResult format - NO SENSITIVE DATA
         const cachedResult: ImpactAnalysisResult = {
@@ -130,12 +140,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         response.headers.set('X-ChangeSim-Model', actualModel)
         return response
       } else {
-        console.log('[impact] Cache miss - proceeding with fresh analysis')
+        if (SHOW_DEBUG_LOGS) {
+          console.log('[impact] Cache miss - proceeding with fresh analysis')
+        }
       }
     } else if (forceFresh) {
-      console.log('[impact] Fresh analysis forced - skipping cache')
+      if (SHOW_DEBUG_LOGS) {
+        console.log('[impact] Fresh analysis forced - skipping cache')
+      }
     } else if (isNewSession) {
-      console.log('[impact] New session detected - skipping cache check')
+      if (SHOW_DEBUG_LOGS) {
+        console.log('[impact] New session detected - skipping cache check')
+      }
     }
 
     let runId = `ia_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
@@ -155,8 +171,10 @@ Return only valid JSON matching the ImpactAnalysisResult schema.`,
       maxOutputTokens: MAX_OUTPUT_TOKENS,
     })
 
-    console.log('[impact] AI response received')
-    console.log('[impact] Token usage:', usage)
+    if (SHOW_DEBUG_LOGS) {
+      console.log('[impact] AI response received')
+      console.log('[impact] Token usage:', usage)
+    }
 
     // Apply deterministic risk mapping with proper enum normalization
     const normalizedRiskScoring = normalizeRiskScoring(parsedResult.risk_scoring)
@@ -236,7 +254,9 @@ Return only valid JSON matching the ImpactAnalysisResult schema.`,
       if (error) {
         if (error.code === '23505') {
           // Unique violation → race condition; re-select the cached row
-          console.log('[impact] Race condition detected, fetching existing result')
+          if (SHOW_DEBUG_LOGS) {
+            console.log('[impact] Race condition detected, fetching existing result')
+          }
           const { data: raced } = await sb
             .from('changesim_impact_analysis_runs')
             .select('*')
@@ -273,7 +293,9 @@ Return only valid JSON matching the ImpactAnalysisResult schema.`,
         console.error('[impact] Database insert failed:', error)
         // Continue execution - don't fail the request for logging issues
       } else {
-        console.log('[impact] Run logged to database:', insertedRun?.run_id)
+        if (SHOW_DEBUG_LOGS) {
+          console.log('[impact] Run logged to database:', insertedRun?.run_id)
+        }
         // Update runId with the actual database UUID
         if (insertedRun?.run_id) {
           runId = insertedRun.run_id
@@ -299,7 +321,9 @@ Return only valid JSON matching the ImpactAnalysisResult schema.`,
     // Result is already validated by generateObject
     const result: ImpactAnalysisResult = parsedResult
 
-    console.log('[impact] Impact analysis completed successfully')
+    if (SHOW_DEBUG_LOGS) {
+      console.log('[impact] Impact analysis completed successfully')
+    }
 
     const response = NextResponse.json(result)
     response.headers.set('X-ChangeSim-Cache', cacheStatus)
