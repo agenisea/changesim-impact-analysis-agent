@@ -126,8 +126,24 @@ export async function insertAnalysisChunks(chunks: AnalysisChunk[]): Promise<voi
     const insertStart = Date.now()
     console.log(`[embedding] Starting database insert at ${new Date(insertStart).toISOString()}`)
 
+    // TEMPORARY DEBUG: Test with single chunk first
+    console.log(`[embedding] Testing single chunk insertion first`)
+    const testChunk = chunks[0]
+    const { error: singleError } = await Promise.race([
+      sb.from(CHUNKS_TABLE).insert([testChunk]),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Single chunk insert timeout after 15 seconds')), 15000)
+      )
+    ]) as { error: any }
+
+    if (singleError) {
+      console.error('[embedding] Single chunk test failed:', singleError)
+      throw new Error(`Single chunk test failed: ${singleError.message}`)
+    }
+
+    console.log(`[embedding] Single chunk test succeeded, trying full batch`)
     const { error } = await Promise.race([
-      sb.from(CHUNKS_TABLE).insert(chunks),
+      sb.from(CHUNKS_TABLE).insert(chunks.slice(1)), // Insert remaining chunks
       new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Database insert timeout after 15 seconds')), 15000)
       )
