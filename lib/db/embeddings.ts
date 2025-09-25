@@ -1,10 +1,16 @@
-import { type ImpactAnalysisResult } from '@/types/impact-analysis'
-import { sb } from '@/lib/db/db'
 import { randomUUID } from 'crypto'
-import { retryFetch } from '@/lib/utils/utils'
+import { type ImpactAnalysisResult } from '@/types/impact-analysis'
+import { sb } from '@/lib/db/client'
+import { retryFetch } from '@/lib/utils/fetch'
 import { EMBEDDING_CONFIG, COMPOSITE_CHUNK_TYPES, type CompositeChunkType } from '@/lib/utils/constants'
 
 const SHOW_DEBUG_LOGS = process.env.SHOW_DEBUG_LOGS === 'true'
+
+// Database and API constants
+const CHUNKS_TABLE = 'changesim_impact_analysis_run_chunks'
+const EDGE_FUNCTIONS_PATH = '/functions/v1'
+const EMBEDDING_PROCESSOR_FUNCTION = 'embedding-processor'
+const UNKNOWN_ERROR_MESSAGE = 'Unknown error'
 
 export interface AnalysisChunk {
   chunk_id: string
@@ -114,7 +120,7 @@ export async function insertAnalysisChunks(chunks: AnalysisChunk[]): Promise<voi
   }
 
   const { error } = await sb
-    .from('changesim_impact_analysis_run_chunks')
+    .from(CHUNKS_TABLE)
     .insert(chunks)
 
   if (error) {
@@ -147,7 +153,7 @@ export async function triggerEmbeddingProcessor(): Promise<{ processed: number }
 
   try {
     const response = await retryFetch(
-      `${supabaseUrl}/functions/v1/embedding-processor`,
+      `${supabaseUrl}${EDGE_FUNCTIONS_PATH}/${EMBEDDING_PROCESSOR_FUNCTION}`,
       {
         method: 'POST',
         headers: {
@@ -162,7 +168,7 @@ export async function triggerEmbeddingProcessor(): Promise<{ processed: number }
     )
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error')
+      const errorText = await response.text().catch(() => UNKNOWN_ERROR_MESSAGE)
       const errorMsg = `embedding-processor call failed: ${response.status} - ${errorText}`
       console.error('[chunking]', errorMsg)
       throw new Error(errorMsg)

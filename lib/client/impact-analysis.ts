@@ -1,4 +1,4 @@
-import { retryFetch } from '@/lib/utils/utils'
+import { retryFetch } from '@/lib/utils/fetch'
 import { ImpactAnalysisInput, ImpactAnalysisResult } from '@/types/impact-analysis'
 
 const RETRY_OPTIONS = { maxAttempts: 3, baseDelayMs: 300 }

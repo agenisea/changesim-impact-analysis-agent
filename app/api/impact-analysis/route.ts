@@ -7,7 +7,7 @@ import { mapRiskLevel } from '@/lib/business/evaluator'
 import { normalizeRiskScoring } from '@/lib/business/normalize'
 import { appendSystemNoteWithBounds, boundDecisionTrace } from '@/lib/business/decision-trace'
 import { impactModel } from '@/lib/ai/ai-client'
-import { sb, type ChangeSimImpactAnalysisRunInsert } from '@/lib/db/db'
+import { sb, type ChangeSimImpactAnalysisRunInsert } from '@/lib/db/client'
 import { getSessionIdCookie } from '@/lib/server/session'
 import { makeInputHash } from '@/lib/utils/hash'
 import { PROMPT_VERSION, PROCESS_NAME, TEMPERATURE, MAX_OUTPUT_TOKENS, CACHE_STATUS, ANALYSIS_STATUS, type CacheStatus } from '@/lib/utils/constants'
@@ -303,7 +303,7 @@ Return only valid JSON matching the ImpactAnalysisResult schema.`,
 
         // Create embeddings for the analysis (async, don't block response)
         if (insertedRun?.run_id) {
-          import('@/lib/db/chunking')
+          import('@/lib/db/embeddings')
             .then(({ chunkAndEmbedAnalysis }) => {
               return chunkAndEmbedAnalysis(
                 parsedResult,

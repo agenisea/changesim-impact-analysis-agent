@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { createAnalysisChunks, insertAnalysisChunks, triggerEmbeddingProcessor, chunkAndEmbedAnalysis } from '@/lib/db/chunking'
+import { createAnalysisChunks, insertAnalysisChunks, triggerEmbeddingProcessor, chunkAndEmbedAnalysis } from '@/lib/db/embeddings'
 import { COMPOSITE_CHUNK_TYPES } from '@/lib/utils/constants'
 import type { ImpactAnalysisResult } from '@/types/impact-analysis'
 
 // Mock external dependencies
-vi.mock('@/lib/db/db', () => ({
+vi.mock('@/lib/db/client', () => ({
   sb: {
     from: vi.fn(() => ({
       insert: vi.fn(() => ({
@@ -14,13 +14,13 @@ vi.mock('@/lib/db/db', () => ({
   }
 }))
 
-vi.mock('@/lib/utils/utils', () => ({
+vi.mock('@/lib/utils/fetch', () => ({
   retryFetch: vi.fn()
 }))
 
 // Import mocked modules
-import { sb } from '@/lib/db/db'
-import { retryFetch } from '@/lib/utils/utils'
+import { sb } from '@/lib/db/client'
+import { retryFetch } from '@/lib/utils/fetch'
 
 const mockDb = vi.mocked(sb)
 const mockRetryFetch = vi.mocked(retryFetch)
