@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { sb, type ChangeSimImpactAnalysisRunInsert } from '@/lib/db/db'
+import { sb, type ChangeSimImpactAnalysisRunInsert } from '@/lib/db/client'
 import { MODEL, PROMPT_VERSION } from '@/lib/utils/constants'
 
 // Mock Supabase client
-vi.mock('@/lib/db/db', () => ({
+vi.mock('@/lib/db/client', () => ({
   sb: {
     from: vi.fn(() => ({
       insert: vi.fn(() => ({

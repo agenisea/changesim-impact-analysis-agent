@@ -1,4 +1,3 @@
-import { randomUUID } from 'crypto'
 import { type ImpactAnalysisResult } from '@/types/impact-analysis'
 import { sb } from '@/lib/db/client'
 import { retryFetch } from '@/lib/utils/fetch'
@@ -13,7 +12,7 @@ const EMBEDDING_PROCESSOR_FUNCTION = 'embedding-processor'
 const UNKNOWN_ERROR_MESSAGE = 'Unknown error'
 
 export interface AnalysisChunk {
-  chunk_id: string
+  chunk_id?: string // Optional - let database generate with gen_random_uuid()
   run_id: string
   org_role: string | null
   composite: CompositeChunkType
@@ -43,7 +42,6 @@ export function createAnalysisChunks(
   ].filter(Boolean).join('\n\n')
 
   chunks.push({
-    chunk_id: randomUUID(),
     run_id: runId,
     org_role: role,
     composite: COMPOSITE_CHUNK_TYPES.ROLE_CHANGE_CONTEXT,
@@ -60,7 +58,6 @@ export function createAnalysisChunks(
 
     if (contextAnalysisContent) {
       chunks.push({
-        chunk_id: randomUUID(),
         run_id: runId,
         org_role: role,
         composite: COMPOSITE_CHUNK_TYPES.CONTEXT_ANALYSIS,
@@ -78,7 +75,6 @@ export function createAnalysisChunks(
     ].join('\n\n')
 
     chunks.push({
-      chunk_id: randomUUID(),
       run_id: runId,
       org_role: role,
       composite: COMPOSITE_CHUNK_TYPES.CHANGE_RISKS,
@@ -92,7 +88,6 @@ export function createAnalysisChunks(
     const sourcesContent = `Sources:\n${result.sources.map(source => `• ${source.title}: ${source.url}`).join('\n')}`
 
     chunks.push({
-      chunk_id: randomUUID(),
       run_id: runId,
       org_role: role,
       composite: COMPOSITE_CHUNK_TYPES.SOURCES,
@@ -126,24 +121,10 @@ export async function insertAnalysisChunks(chunks: AnalysisChunk[]): Promise<voi
     const insertStart = Date.now()
     console.log(`[embedding] Starting database insert at ${new Date(insertStart).toISOString()}`)
 
-    // TEMPORARY DEBUG: Test with single chunk first
-    console.log(`[embedding] Testing single chunk insertion first`)
-    const testChunk = chunks[0]
-    const { error: singleError } = await Promise.race([
-      sb.from(CHUNKS_TABLE).insert([testChunk]),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Single chunk insert timeout after 15 seconds')), 15000)
-      )
-    ]) as { error: any }
-
-    if (singleError) {
-      console.error('[embedding] Single chunk test failed:', singleError)
-      throw new Error(`Single chunk test failed: ${singleError.message}`)
-    }
-
-    console.log(`[embedding] Single chunk test succeeded, trying full batch`)
+    // Insert all chunks at once - handles unique constraint uq_run_composite_idx (run_id, composite, chunk_idx)
+    console.log(`[embedding] Inserting all chunks with proper constraint handling`)
     const { error } = await Promise.race([
-      sb.from(CHUNKS_TABLE).insert(chunks.slice(1)), // Insert remaining chunks
+      sb.from(CHUNKS_TABLE).insert(chunks),
       new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Database insert timeout after 15 seconds')), 15000)
       )

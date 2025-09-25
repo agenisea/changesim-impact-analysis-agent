@@ -155,12 +155,12 @@ describe('chunking', () => {
       })
     })
 
-    it('should generate unique chunk IDs', () => {
+    it('should create chunks without chunk_id (database will generate)', () => {
       const chunks = createAnalysisChunks(mockResult, runId, role, changeDescription, context)
-      const chunkIds = chunks.map(c => c.chunk_id)
-      const uniqueIds = new Set(chunkIds)
 
-      expect(uniqueIds.size).toBe(chunkIds.length)
+      chunks.forEach(chunk => {
+        expect(chunk.chunk_id).toBeUndefined()
+      })
     })
   })
 
@@ -173,7 +173,6 @@ describe('chunking', () => {
 
       const chunks = [
         {
-          chunk_id: 'test-id-1',
           run_id: 'test-run',
           org_role: 'Engineer',
           composite: COMPOSITE_CHUNK_TYPES.ROLE_CHANGE_CONTEXT,
@@ -202,7 +201,6 @@ describe('chunking', () => {
 
       const chunks = [
         {
-          chunk_id: 'test-id-1',
           run_id: 'test-run',
           org_role: 'Engineer',
           composite: COMPOSITE_CHUNK_TYPES.ROLE_CHANGE_CONTEXT,
