@@ -1,0 +1,360 @@
+Deno.serve(async (req)=>{
+  try {
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!SUPABASE_URL || !KEY) {
+      console.error('[embedding-job-processor] Missing environment variables');
+      return new Response("missing env", {
+        status: 500
+      });
+    }
+    // Fetch pending jobs
+    const jobsRes = await fetch(`${SUPABASE_URL}/rest/v1/embedding_jobs?status=eq.pending&limit=10`, {
+      headers: {
+        "apikey": KEY,
+        "Authorization": `Bearer ${KEY}`
+      }
+    });
+    if (!jobsRes.ok) {
+      console.error('[embedding-job-processor] Jobs query failed:', jobsRes.status);
+      return new Response(JSON.stringify({
+        error: 'Jobs query failed'
+      }), {
+        status: 500
+      });
+    }
+    const jobs = await jobsRes.json();
+    if (!Array.isArray(jobs) || jobs.length === 0) {
+      return new Response(JSON.stringify({
+        processed: 0
+      }), {
+        status: 200
+      });
+    }
+    // Fetch chunks for jobs
+    const jobsWithChunks = await Promise.all(jobs.map(async (job)=>{
+      const chunkRes = await fetch(`${SUPABASE_URL}/rest/v1/changesim_impact_analysis_run_chunks?chunk_id=eq.${job.chunk_id}&select=*`, {
+        headers: {
+          "apikey": KEY,
+          "Authorization": `Bearer ${KEY}`
+        }
+      });
+      if (!chunkRes.ok) {
+        console.error(`[embedding-job-processor] Failed to fetch chunk for job ${job.id}`);
+        return {
+          ...job,
+          chunk: null
+        };
+      }
+      const chunks = await chunkRes.json();
+      return {
+        ...job,
+        chunk: chunks[0] || null
+      };
+    }));
+    // Filter valid jobs
+    const validJobs = jobsWithChunks.filter((job)=>job.chunk?.content);
+    if (validJobs.length === 0) {
+      // Mark all jobs as failed
+      await Promise.all(jobs.map((job)=>fetch(`${SUPABASE_URL}/rest/v1/embedding_jobs?chunk_id=eq.${job.chunk_id}`, {
+          method: "PATCH",
+          headers: {
+            "apikey": KEY,
+            "Authorization": `Bearer ${KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            status: "failed"
+          })
+        }).catch(()=>{})));
+      return new Response(JSON.stringify({
+        processed: 0
+      }), {
+        status: 200
+      });
+    }
+    // Process jobs individually
+    console.log(`[embedding-job-processor] Processing ${validJobs.length} jobs`);
+    const model = new Supabase.ai.Session("gte-small");
+    const results = [];
+    for (const job of validJobs){
+      try {
+        const outputs = await model.run([
+          job.chunk.content
+        ], {
+          mean_pool: true,
+          normalize: true
+        });
+        if (Array.isArray(outputs) && outputs.length > 0) {
+          // Update chunk and mark job done
+          const [chunkRes, jobRes] = await Promise.all([
+            fetch(`${SUPABASE_URL}/rest/v1/changesim_impact_analysis_run_chunks?chunk_id=eq.${job.chunk.chunk_id}`, {
+              method: "PATCH",
+              headers: {
+                "apikey": KEY,
+                "Authorization": `Bearer ${KEY}`,
+                "Content-Type": "application/json",
+                "Prefer": "return=representation"
+              },
+              body: JSON.stringify({
+                embedding: outputs
+              })
+            }),
+            fetch(`${SUPABASE_URL}/rest/v1/embedding_jobs?chunk_id=eq.${job.chunk_id}`, {
+              method: "PATCH",
+              headers: {
+                "apikey": KEY,
+                "Authorization": `Bearer ${KEY}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                status: "done"
+              })
+            })
+          ]);
+          if (chunkRes.ok && jobRes.ok) {
+            results.push(job.chunk_id);
+          } else {
+            console.error(`[embedding-job-processor] Failed to update job ${job.id}: chunk ${chunkRes.status}, job ${jobRes.status}`);
+            await fetch(`${SUPABASE_URL}/rest/v1/embedding_jobs?chunk_id=eq.${job.chunk_id}`, {
+              method: "PATCH",
+              headers: {
+                "apikey": KEY,
+                "Authorization": `Bearer ${KEY}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                status: "failed"
+              })
+            }).catch(()=>{});
+          }
+        } else {
+          console.error(`[embedding-job-processor] Invalid embedding for job ${job.id}`);
+          await fetch(`${SUPABASE_URL}/rest/v1/embedding_jobs?chunk_id=eq.${job.chunk_id}`, {
+            method: "PATCH",
+            headers: {
+              "apikey": KEY,
+              "Authorization": `Bearer ${KEY}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              status: "failed"
+            })
+          }).catch(()=>{});
+        }
+      } catch (jobError) {
+        console.error(`[embedding-job-processor] Error processing job ${job.id}:`, jobError.message);
+        await fetch(`${SUPABASE_URL}/rest/v1/embedding_jobs?chunk_id=eq.${job.chunk_id}`, {
+          method: "PATCH",
+          headers: {
+            "apikey": KEY,
+            "Authorization": `Bearer ${KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            status: "failed"
+          })
+        }).catch(()=>{});
+      }
+    }
+    console.log(`[embedding-job-processor] Completed: ${results.length}/${validJobs.length} successful`);
+    return new Response(JSON.stringify({
+      processed: results.length
+    }), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+  } catch (err) {
+    console.error('[embedding-job-processor] Fatal error:', err.message);
+    return new Response(JSON.stringify({
+      error: err.message
+    }), {
+      status: 500,
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+  }
+});
+Deno.serve(async (req)=>{
+  try {
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!SUPABASE_URL || !KEY) {
+      console.error('[embedding-job-processor] Missing environment variables');
+      return new Response("missing env", {
+        status: 500
+      });
+    }
+    // Fetch pending jobs
+    const jobsRes = await fetch(`${SUPABASE_URL}/rest/v1/embedding_jobs?status=eq.pending&limit=10`, {
+      headers: {
+        "apikey": KEY,
+        "Authorization": `Bearer ${KEY}`
+      }
+    });
+    if (!jobsRes.ok) {
+      console.error('[embedding-job-processor] Jobs query failed:', jobsRes.status);
+      return new Response(JSON.stringify({
+        error: 'Jobs query failed'
+      }), {
+        status: 500
+      });
+    }
+    const jobs = await jobsRes.json();
+    if (!Array.isArray(jobs) || jobs.length === 0) {
+      return new Response(JSON.stringify({
+        processed: 0
+      }), {
+        status: 200
+      });
+    }
+    // Fetch chunks for jobs
+    const jobsWithChunks = await Promise.all(jobs.map(async (job)=>{
+      const chunkRes = await fetch(`${SUPABASE_URL}/rest/v1/changesim_impact_analysis_run_chunks?chunk_id=eq.${job.chunk_id}&select=*`, {
+        headers: {
+          "apikey": KEY,
+          "Authorization": `Bearer ${KEY}`
+        }
+      });
+      if (!chunkRes.ok) {
+        console.error(`[embedding-job-processor] Failed to fetch chunk for job ${job.id}`);
+        return {
+          ...job,
+          chunk: null
+        };
+      }
+      const chunks = await chunkRes.json();
+      return {
+        ...job,
+        chunk: chunks[0] || null
+      };
+    }));
+    // Filter valid jobs
+    const validJobs = jobsWithChunks.filter((job)=>job.chunk?.content);
+    if (validJobs.length === 0) {
+      // Mark all jobs as failed
+      await Promise.all(jobs.map((job)=>fetch(`${SUPABASE_URL}/rest/v1/embedding_jobs?chunk_id=eq.${job.chunk_id}`, {
+          method: "PATCH",
+          headers: {
+            "apikey": KEY,
+            "Authorization": `Bearer ${KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            status: "failed"
+          })
+        }).catch(()=>{})));
+      return new Response(JSON.stringify({
+        processed: 0
+      }), {
+        status: 200
+      });
+    }
+    // Process jobs individually
+    console.log(`[embedding-job-processor] Processing ${validJobs.length} jobs`);
+    const model = new Supabase.ai.Session("gte-small");
+    const results = [];
+    for (const job of validJobs){
+      try {
+        const outputs = await model.run([
+          job.chunk.content
+        ], {
+          mean_pool: true,
+          normalize: true
+        });
+        if (Array.isArray(outputs) && outputs.length > 0) {
+          // Update chunk and mark job done
+          const [chunkRes, jobRes] = await Promise.all([
+            fetch(`${SUPABASE_URL}/rest/v1/changesim_impact_analysis_run_chunks?chunk_id=eq.${job.chunk.chunk_id}`, {
+              method: "PATCH",
+              headers: {
+                "apikey": KEY,
+                "Authorization": `Bearer ${KEY}`,
+                "Content-Type": "application/json",
+                "Prefer": "return=representation"
+              },
+              body: JSON.stringify({
+                embedding: outputs
+              })
+            }),
+            fetch(`${SUPABASE_URL}/rest/v1/embedding_jobs?chunk_id=eq.${job.chunk_id}`, {
+              method: "PATCH",
+              headers: {
+                "apikey": KEY,
+                "Authorization": `Bearer ${KEY}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                status: "done"
+              })
+            })
+          ]);
+          if (chunkRes.ok && jobRes.ok) {
+            results.push(job.chunk_id);
+          } else {
+            console.error(`[embedding-job-processor] Failed to update job ${job.id}: chunk ${chunkRes.status}, job ${jobRes.status}`);
+            await fetch(`${SUPABASE_URL}/rest/v1/embedding_jobs?chunk_id=eq.${job.chunk_id}`, {
+              method: "PATCH",
+              headers: {
+                "apikey": KEY,
+                "Authorization": `Bearer ${KEY}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                status: "failed"
+              })
+            }).catch(()=>{});
+          }
+        } else {
+          console.error(`[embedding-job-processor] Invalid embedding for job ${job.id}`);
+          await fetch(`${SUPABASE_URL}/rest/v1/embedding_jobs?chunk_id=eq.${job.chunk_id}`, {
+            method: "PATCH",
+            headers: {
+              "apikey": KEY,
+              "Authorization": `Bearer ${KEY}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              status: "failed"
+            })
+          }).catch(()=>{});
+        }
+      } catch (jobError) {
+        console.error(`[embedding-job-processor] Error processing job ${job.id}:`, jobError.message);
+        await fetch(`${SUPABASE_URL}/rest/v1/embedding_jobs?chunk_id=eq.${job.chunk_id}`, {
+          method: "PATCH",
+          headers: {
+            "apikey": KEY,
+            "Authorization": `Bearer ${KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            status: "failed"
+          })
+        }).catch(()=>{});
+      }
+    }
+    console.log(`[embedding-job-processor] Completed: ${results.length}/${validJobs.length} successful`);
+    return new Response(JSON.stringify({
+      processed: results.length
+    }), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+  } catch (err) {
+    console.error('[embedding-job-processor] Fatal error:', err.message);
+    return new Response(JSON.stringify({
+      error: err.message
+    }), {
+      status: 500,
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+  }
+});

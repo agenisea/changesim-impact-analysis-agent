@@ -31,3 +31,20 @@ export const ANALYSIS_STATUS = {
 } as const
 
 export type AnalysisStatus = typeof ANALYSIS_STATUS[keyof typeof ANALYSIS_STATUS]
+
+// Embedding configuration constants
+export const EMBEDDING_CONFIG = {
+  BATCH_SIZE: 10,
+  MAX_RETRIES: 3,
+  RETRY_DELAY_MS: 500
+} as const
+
+// Composite chunk types for semantic organization
+export const COMPOSITE_CHUNK_TYPES = {
+  ROLE_CHANGE_CONTEXT: 'role_change_context',
+  CONTEXT_ANALYSIS: 'context_analysis',
+  CHANGE_RISKS: 'change_risks',
+  SOURCES: 'sources'
+} as const
+
+export type CompositeChunkType = typeof COMPOSITE_CHUNK_TYPES[keyof typeof COMPOSITE_CHUNK_TYPES]

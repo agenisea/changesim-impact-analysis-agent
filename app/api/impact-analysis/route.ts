@@ -300,6 +300,24 @@ Return only valid JSON matching the ImpactAnalysisResult schema.`,
         if (insertedRun?.run_id) {
           runId = insertedRun.run_id
         }
+
+        // Create embeddings for the analysis (async, don't block response)
+        if (insertedRun?.run_id) {
+          import('@/lib/db/chunking')
+            .then(({ chunkAndEmbedAnalysis }) => {
+              return chunkAndEmbedAnalysis(
+                parsedResult,
+                insertedRun.run_id,
+                role,
+                changeDescription,
+                context
+              )
+            })
+            .catch((embeddingError) => {
+              console.error('[impact] Embedding creation failed:', embeddingError)
+              // Don't fail the main request for embedding issues
+            })
+        }
       }
     } catch (dbError) {
       console.error('[impact] Database logging error:', dbError)
