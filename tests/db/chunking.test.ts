@@ -304,8 +304,8 @@ describe('chunking', () => {
         'Test context'
       )
 
-      expect(consoleSpy).toHaveBeenCalledWith('[chunking] Inserted 4 chunks - jobs enqueued by trigger')
-      expect(consoleSpy).toHaveBeenCalledWith('[chunking] Embedding processor: 3 jobs processed')
+      expect(consoleSpy).toHaveBeenCalledWith('[embedding] Inserted 4 chunks - jobs enqueued by trigger')
+      expect(consoleSpy).toHaveBeenCalledWith('[embedding] Embedding processor: 3 jobs processed')
 
       consoleSpy.mockRestore()
     })
@@ -365,8 +365,8 @@ describe('chunking', () => {
       )
 
       // Just verify the standard logs are called - debug logs aren't working in tests
-      expect(consoleSpy).toHaveBeenCalledWith('[chunking] Inserted 4 chunks - jobs enqueued by trigger')
-      expect(consoleSpy).toHaveBeenCalledWith('[chunking] Embedding processor: 3 jobs processed')
+      expect(consoleSpy).toHaveBeenCalledWith('[embedding] Inserted 4 chunks - jobs enqueued by trigger')
+      expect(consoleSpy).toHaveBeenCalledWith('[embedding] Embedding processor: 3 jobs processed')
 
       consoleSpy.mockRestore()
     })

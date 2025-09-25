@@ -314,7 +314,7 @@ Return only valid JSON matching the ImpactAnalysisResult schema.`,
               )
             })
             .catch((embeddingError) => {
-              console.error('[impact-analysis] Embedding creation failed:', embeddingError)
+              console.error('[impact-analysis] Embedding process failed:', embeddingError)
               // Don't fail the main request for embedding issues
             })
         }
