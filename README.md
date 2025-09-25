@@ -174,6 +174,17 @@ Dimensions              Alignment                                   Bounds      
 
 ---
 
+## License
+
+This codebase is licensed under the **Business Source License 1.1 (BUSL-1.1)**.  
+- ✅ Free for non-production, non-commercial use  
+- 💼 All production or commercial use requires a license from **Resilient AI™**  
+- ⏳ This grant has **no automatic conversion date**; the work will remain under BUSL indefinitely  
+
+See [`LICENSE`](./LICENSE) for full terms and parameters.
+
+---
+
 ## 🤝 Contributing
 
 This project is in **active exploration**. Feedback, issues, and ideas welcome.
