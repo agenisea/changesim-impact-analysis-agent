@@ -54,11 +54,11 @@ const impactAnalysisResultSchema = z.object({
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    console.log('[impact] API route called')
+    console.log('[impact-analysis] API route called')
 
     const body = await request.json()
     if (SHOW_DEBUG_LOGS) {
-      console.log('[impact] Request data:', body)
+      console.log('[impact-analysis] Request data:', body)
     }
 
     // Validate input
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         .map((err: any) => `${err.path.join('.')}: ${err.message}`)
         .join(', ')
       if (SHOW_DEBUG_LOGS) {
-        console.log('[impact] Validation failed:', errorMessage)
+        console.log('[impact-analysis] Validation failed:', errorMessage)
       }
       return NextResponse.json({ error: errorMessage }, { status: 422 })
     }
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Skip cache check for new sessions since no runs could exist yet
     if (!forceFresh && !isNewSession) {
       if (SHOW_DEBUG_LOGS) {
-        console.log('[impact] Checking cache for existing session')
+        console.log('[impact-analysis] Checking cache for existing session')
       }
 
       const { data: cached, error: cacheError } = await sb
@@ -109,11 +109,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         .maybeSingle()
 
       if (cacheError) {
-        console.error('[impact] Cache lookup error:', cacheError)
+        console.error('[impact-analysis] Cache lookup error:', cacheError)
         // Continue to fresh analysis
       } else if (cached) {
         if (SHOW_DEBUG_LOGS) {
-          console.log('[impact] Cache hit! Returning cached result')
+          console.log('[impact-analysis] Cache hit! Returning cached result')
         }
 
         // Transform cached data to match expected ImpactResult format - NO SENSITIVE DATA
@@ -141,16 +141,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         return response
       } else {
         if (SHOW_DEBUG_LOGS) {
-          console.log('[impact] Cache miss - proceeding with fresh analysis')
+          console.log('[impact-analysis] Cache miss - proceeding with fresh analysis')
         }
       }
     } else if (forceFresh) {
       if (SHOW_DEBUG_LOGS) {
-        console.log('[impact] Fresh analysis forced - skipping cache')
+        console.log('[impact-analysis] Fresh analysis forced - skipping cache')
       }
     } else if (isNewSession) {
       if (SHOW_DEBUG_LOGS) {
-        console.log('[impact] New session detected - skipping cache check')
+        console.log('[impact-analysis] New session detected - skipping cache check')
       }
     }
 
@@ -172,8 +172,8 @@ Return only valid JSON matching the ImpactAnalysisResult schema.`,
     })
 
     if (SHOW_DEBUG_LOGS) {
-      console.log('[impact] AI response received')
-      console.log('[impact] Token usage:', usage)
+      console.log('[impact-analysis] AI response received')
+      console.log('[impact-analysis] Token usage:', usage)
     }
 
     // Apply deterministic risk mapping with proper enum normalization
@@ -255,7 +255,7 @@ Return only valid JSON matching the ImpactAnalysisResult schema.`,
         if (error.code === '23505') {
           // Unique violation → race condition; re-select the cached row
           if (SHOW_DEBUG_LOGS) {
-            console.log('[impact] Race condition detected, fetching existing result')
+            console.log('[impact-analysis] Race condition detected, fetching existing result')
           }
           const { data: raced } = await sb
             .from('changesim_impact_analysis_runs')
@@ -290,11 +290,11 @@ Return only valid JSON matching the ImpactAnalysisResult schema.`,
             return response
           }
         }
-        console.error('[impact] Database insert failed:', error)
+        console.error('[impact-analysis] Database insert failed:', error)
         // Continue execution - don't fail the request for logging issues
       } else {
         if (SHOW_DEBUG_LOGS) {
-          console.log('[impact] Run logged to database:', insertedRun?.run_id)
+          console.log('[impact-analysis] Run logged to database:', insertedRun?.run_id)
         }
         // Update runId with the actual database UUID
         if (insertedRun?.run_id) {
@@ -314,13 +314,13 @@ Return only valid JSON matching the ImpactAnalysisResult schema.`,
               )
             })
             .catch((embeddingError) => {
-              console.error('[impact] Embedding creation failed:', embeddingError)
+              console.error('[impact-analysis] Embedding creation failed:', embeddingError)
               // Don't fail the main request for embedding issues
             })
         }
       }
     } catch (dbError) {
-      console.error('[impact] Database logging error:', dbError)
+      console.error('[impact-analysis] Database logging error:', dbError)
       // Continue execution - don't fail the request for logging issues
     }
 
@@ -340,7 +340,7 @@ Return only valid JSON matching the ImpactAnalysisResult schema.`,
     const result: ImpactAnalysisResult = parsedResult
 
     if (SHOW_DEBUG_LOGS) {
-      console.log('[impact] Impact analysis completed successfully')
+      console.log('[impact-analysis] Impact analysis completed successfully')
     }
 
     const response = NextResponse.json(result)
@@ -349,8 +349,8 @@ Return only valid JSON matching the ImpactAnalysisResult schema.`,
     response.headers.set('X-ChangeSim-Model', actualModel)
     return response
   } catch (error) {
-    console.error('[impact] Impact analysis error:', error)
-    console.error('[impact] Error details:', {
+    console.error('[impact-analysis] Impact analysis error:', error)
+    console.error('[impact-analysis] Error details:', {
       message: (error as Error).message,
       stack: (error as Error).stack,
     })
