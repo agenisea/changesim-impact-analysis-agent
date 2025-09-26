@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server'
+import { withAuth } from '@/lib/server/auth'
 import { generateObject } from 'ai'
 import { type ImpactAnalysisResult } from '@/types/impact-analysis'
 import { z } from 'zod'
@@ -52,7 +53,7 @@ const impactAnalysisResultSchema = z.object({
     .optional(),
 })
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+async function _POST(request: NextRequest): Promise<NextResponse> {
   try {
     console.log('[impact-analysis] API route called')
 
@@ -383,3 +384,6 @@ Return only valid JSON matching the ImpactAnalysisResult schema.`,
     }
   }
 }
+
+// Export auth-protected version
+export const POST = withAuth(_POST)

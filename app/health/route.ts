@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
+import { withAuth } from '@/lib/server/auth'
 
 /**
  * Health check endpoint for Fly.io monitoring
  * Returns 200 OK if the application is healthy
  */
-export async function GET() {
+async function _GET() {
   try {
     // Basic health check - verify the app is responsive
     return NextResponse.json(
@@ -34,3 +35,6 @@ export async function GET() {
     )
   }
 }
+
+// Export auth-protected version
+export const GET = withAuth(_GET)

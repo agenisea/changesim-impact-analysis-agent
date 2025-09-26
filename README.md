@@ -143,6 +143,7 @@ Dimensions              Alignment                                   Bounds      
      OPENAI_API_KEY=your_actual_api_key_here
      SUPABASE_URL=your_supabase_project_url
      SUPABASE_KEY=your_supabase_service_role_key
+     API_TOKEN=your_secure_api_token_here
      # Optional: Enable verbose debug logging (default: false)
      SHOW_DEBUG_LOGS=true
      ```
@@ -205,6 +206,7 @@ Dimensions              Alignment                                   Bounds      
    fly secrets set OPENAI_API_KEY=your_openai_api_key_here
    fly secrets set SUPABASE_URL=your_supabase_project_url
    fly secrets set SUPABASE_KEY=your_supabase_service_role_key
+   fly secrets set API_TOKEN=your_api_token_here
    fly secrets set SHOW_DEBUG_LOGS=false
    ```
 
