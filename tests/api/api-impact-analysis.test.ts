@@ -12,7 +12,7 @@ vi.mock('@/lib/ai/ai-client', () => ({
   impactModel: { modelId: 'gpt-4o-mini' }
 }))
 
-vi.mock('@/lib/db/db', () => ({
+vi.mock('@/lib/db/client', () => ({
   sb: {
     from: vi.fn()
   }
@@ -32,7 +32,7 @@ vi.mock('@/lib/utils/hash', () => ({
 
 // Import mocked modules
 import { generateObject } from 'ai'
-import { sb } from '@/lib/db/db'
+import { sb } from '@/lib/db/client'
 import { getSessionIdCookie } from '@/lib/server/session'
 
 const mockGenerateObject = vi.mocked(generateObject)

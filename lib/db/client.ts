@@ -1,5 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
 
+// Build-time placeholder constants
+const PLACEHOLDER_URL = 'https://placeholder.supabase.co'
+const PLACEHOLDER_KEY = 'placeholder-key'
+
 // Environment variable validation
 const supabaseUrl = process.env.SUPABASE_URL
 const supabaseKey = process.env.SUPABASE_KEY
@@ -25,8 +29,8 @@ if (!isBuildTime) {
 // Server-side Supabase client with service key for write operations
 // Use placeholder values during build time
 export const sb = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseKey || 'placeholder-key'
+  supabaseUrl || PLACEHOLDER_URL,
+  supabaseKey || PLACEHOLDER_KEY
 )
 
 // Type definitions for database operations (matches actual schema)

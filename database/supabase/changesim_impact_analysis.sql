@@ -44,7 +44,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS changesim_impact_analysis_runs_session_input_u
 
 --changesim_impact_analysis_run_chunks
 create table public.changesim_impact_analysis_run_chunks (
-  chunk_id uuid not null,
+  chunk_id uuid not null default gen_random_uuid (),
   run_id uuid not null,
   org_role text null,
   chunk_idx integer not null,
@@ -58,11 +58,9 @@ create table public.changesim_impact_analysis_run_chunks (
 
 create index IF not exists changesim_impact_analysis_run_chunks_composite_idx on public.changesim_impact_analysis_run_chunks using btree (composite) TABLESPACE pg_default;
 
-create index IF not exists changesim_impact_analysis_run_chunks_vec_idx on public.changesim_impact_analysis_run_chunks using ivfflat (embedding vector_cosine_ops)
-with
-  (lists = '100') TABLESPACE pg_default;
+create unique INDEX IF not exists uq_run_composite_idx on public.changesim_impact_analysis_run_chunks using btree (run_id, composite, chunk_idx) TABLESPACE pg_default;
 
-create index IF not exists idx_changesim_chunks_embedding on public.changesim_impact_analysis_run_chunks using ivfflat (embedding)
+create index IF not exists changesim_impact_analysis_run_chunks_vec_idx on public.changesim_impact_analysis_run_chunks using ivfflat (embedding vector_cosine_ops)
 with
   (lists = '100') TABLESPACE pg_default;
 

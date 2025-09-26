@@ -1,13 +1,18 @@
 import { type ImpactAnalysisResult } from '@/types/impact-analysis'
-import { sb } from '@/lib/db/db'
-import { randomUUID } from 'crypto'
-import { retryFetch } from '@/lib/utils/utils'
+import { sb } from '@/lib/db/client'
+import { retryFetch } from '@/lib/utils/fetch'
 import { EMBEDDING_CONFIG, COMPOSITE_CHUNK_TYPES, type CompositeChunkType } from '@/lib/utils/constants'
 
 const SHOW_DEBUG_LOGS = process.env.SHOW_DEBUG_LOGS === 'true'
 
+// Database and API constants
+const CHUNKS_TABLE = 'changesim_impact_analysis_run_chunks'
+const EDGE_FUNCTIONS_PATH = '/functions/v1'
+const EMBEDDING_PROCESSOR_FUNCTION = 'embedding-processor'
+const UNKNOWN_ERROR_MESSAGE = 'Unknown error'
+
 export interface AnalysisChunk {
-  chunk_id: string
+  chunk_id?: string // Optional - let database generate with gen_random_uuid()
   run_id: string
   org_role: string | null
   composite: CompositeChunkType
@@ -37,7 +42,6 @@ export function createAnalysisChunks(
   ].filter(Boolean).join('\n\n')
 
   chunks.push({
-    chunk_id: randomUUID(),
     run_id: runId,
     org_role: role,
     composite: COMPOSITE_CHUNK_TYPES.ROLE_CHANGE_CONTEXT,
@@ -54,7 +58,6 @@ export function createAnalysisChunks(
 
     if (contextAnalysisContent) {
       chunks.push({
-        chunk_id: randomUUID(),
         run_id: runId,
         org_role: role,
         composite: COMPOSITE_CHUNK_TYPES.CONTEXT_ANALYSIS,
@@ -72,7 +75,6 @@ export function createAnalysisChunks(
     ].join('\n\n')
 
     chunks.push({
-      chunk_id: randomUUID(),
       run_id: runId,
       org_role: role,
       composite: COMPOSITE_CHUNK_TYPES.CHANGE_RISKS,
@@ -86,7 +88,6 @@ export function createAnalysisChunks(
     const sourcesContent = `Sources:\n${result.sources.map(source => `• ${source.title}: ${source.url}`).join('\n')}`
 
     chunks.push({
-      chunk_id: randomUUID(),
       run_id: runId,
       org_role: role,
       composite: COMPOSITE_CHUNK_TYPES.SOURCES,
@@ -104,27 +105,58 @@ export function createAnalysisChunks(
 export async function insertAnalysisChunks(chunks: AnalysisChunk[]): Promise<void> {
   if (chunks.length === 0) {
     if (SHOW_DEBUG_LOGS) {
-      console.log('[chunking] No chunks to insert')
+      console.log('[embedding] No chunks to insert')
     }
     return
   }
 
   if (SHOW_DEBUG_LOGS) {
-    console.log(`[chunking] Inserting ${chunks.length} chunks`)
+    console.log(`[embedding] Inserting ${chunks.length} chunks`)
   }
 
-  const { error } = await sb
-    .from('changesim_impact_analysis_run_chunks')
-    .insert(chunks)
+  // Add detailed logging and timeout wrapper for debugging
+  console.log(`[embedding] About to insert chunks for run_id: ${chunks[0]?.run_id}`)
 
-  if (error) {
-    const errorMsg = `Failed to insert chunks: ${error.message}`
-    console.error('[chunking]', errorMsg)
-    throw new Error(errorMsg)
-  }
+  try {
+    const insertStart = Date.now()
+    console.log(`[embedding] Starting database insert at ${new Date(insertStart).toISOString()}`)
 
-  if (SHOW_DEBUG_LOGS) {
-    console.log(`[chunking] Successfully inserted ${chunks.length} chunks`)
+    // Insert all chunks at once - handles unique constraint uq_run_composite_idx (run_id, composite, chunk_idx)
+    console.log(`[embedding] Inserting all chunks with proper constraint handling`)
+    const { error } = await Promise.race([
+      sb.from(CHUNKS_TABLE).insert(chunks),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Database insert timeout after 15 seconds')), 15000)
+      )
+    ]) as { error: any }
+
+    const insertDuration = Date.now() - insertStart
+    console.log(`[embedding] Insert completed in ${insertDuration}ms`)
+
+    if (error) {
+      console.error('[embedding] Database error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+        run_id: chunks[0]?.run_id,
+        chunk_count: chunks.length
+      })
+      throw new Error(`Failed to insert chunks: ${error.message}`)
+    }
+
+    console.log(`[embedding] Successfully inserted ${chunks.length} chunks for run: ${chunks[0]?.run_id}`)
+
+  } catch (err) {
+    const error = err as Error
+    console.error('[embedding] Insert operation failed:', {
+      error_message: error.message,
+      error_name: error.name,
+      run_id: chunks[0]?.run_id,
+      chunk_count: chunks.length,
+      timestamp: new Date().toISOString()
+    })
+    throw error
   }
 }
 
@@ -137,17 +169,17 @@ export async function triggerEmbeddingProcessor(): Promise<{ processed: number }
 
   if (!supabaseUrl || !serviceKey) {
     const errorMsg = 'Missing SUPABASE_URL or SUPABASE_KEY environment variables'
-    console.error('[chunking]', errorMsg)
+    console.error('[embedding]', errorMsg)
     throw new Error(errorMsg)
   }
 
   if (SHOW_DEBUG_LOGS) {
-    console.log('[chunking] Triggering embedding processor')
+    console.log('[embedding] Triggering embedding processor')
   }
 
   try {
     const response = await retryFetch(
-      `${supabaseUrl}/functions/v1/embedding-processor`,
+      `${supabaseUrl}${EDGE_FUNCTIONS_PATH}/${EMBEDDING_PROCESSOR_FUNCTION}`,
       {
         method: 'POST',
         headers: {
@@ -162,22 +194,22 @@ export async function triggerEmbeddingProcessor(): Promise<{ processed: number }
     )
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error')
+      const errorText = await response.text().catch(() => UNKNOWN_ERROR_MESSAGE)
       const errorMsg = `embedding-processor call failed: ${response.status} - ${errorText}`
-      console.error('[chunking]', errorMsg)
+      console.error('[embedding]', errorMsg)
       throw new Error(errorMsg)
     }
 
     const result = await response.json()
 
     if (SHOW_DEBUG_LOGS) {
-      console.log(`[chunking] Embedding processor completed: ${result.processed} jobs processed`)
+      console.log(`[embedding] Embedding processor completed: ${result.processed} jobs processed`)
     }
 
     return result
   } catch (error) {
     const errorMsg = `Embedding processor failed: ${(error as Error).message}`
-    console.error('[chunking]', errorMsg)
+    console.error('[embedding]', errorMsg)
     throw new Error(errorMsg)
   }
 }
@@ -194,7 +226,7 @@ export async function chunkAndEmbedAnalysis(
 ): Promise<void> {
   try {
     if (SHOW_DEBUG_LOGS) {
-      console.log(`[chunking] Starting embedding process for run: ${runId}`)
+      console.log(`[embedding] Starting embedding process for run: ${runId}`)
     }
 
     // 1. Create chunks from analysis result
@@ -202,24 +234,24 @@ export async function chunkAndEmbedAnalysis(
 
     if (chunks.length === 0) {
       if (SHOW_DEBUG_LOGS) {
-        console.log('[chunking] No chunks to embed - skipping')
+        console.log('[embedding] No chunks to embed - skipping')
       }
       return
     }
 
     // 2. Insert chunks (DB trigger enqueues jobs automatically)
     await insertAnalysisChunks(chunks)
-    console.log(`[chunking] Inserted ${chunks.length} chunks - jobs enqueued by trigger`)
+    console.log(`[embedding] Inserted ${chunks.length} chunks - jobs enqueued by trigger`)
 
     // 3. Call edge function to process the queue
     const processingResult = await triggerEmbeddingProcessor()
-    console.log(`[chunking] Embedding processor: ${processingResult.processed} jobs processed`)
+    console.log(`[embedding] Embedding processor: ${processingResult.processed} jobs processed`)
 
     if (SHOW_DEBUG_LOGS) {
-      console.log(`[chunking] Embedding process completed successfully for run: ${runId}`)
+      console.log(`[embedding] Embedding process completed successfully for run: ${runId}`)
     }
   } catch (error) {
-    console.error(`[chunking] Embedding process failed for run ${runId}:`, (error as Error).message)
+    console.error(`[embedding] Embedding process failed for run ${runId}:`, (error as Error).message)
     // Re-throw to allow caller to handle as needed
     throw error
   }

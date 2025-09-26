@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { createAnalysisChunks, insertAnalysisChunks, triggerEmbeddingProcessor, chunkAndEmbedAnalysis } from '@/lib/db/chunking'
+import { createAnalysisChunks, insertAnalysisChunks, triggerEmbeddingProcessor, chunkAndEmbedAnalysis } from '@/lib/db/embeddings'
 import { COMPOSITE_CHUNK_TYPES } from '@/lib/utils/constants'
 import type { ImpactAnalysisResult } from '@/types/impact-analysis'
 
 // Mock external dependencies
-vi.mock('@/lib/db/db', () => ({
+vi.mock('@/lib/db/client', () => ({
   sb: {
     from: vi.fn(() => ({
       insert: vi.fn(() => ({
@@ -14,13 +14,13 @@ vi.mock('@/lib/db/db', () => ({
   }
 }))
 
-vi.mock('@/lib/utils/utils', () => ({
+vi.mock('@/lib/utils/fetch', () => ({
   retryFetch: vi.fn()
 }))
 
 // Import mocked modules
-import { sb } from '@/lib/db/db'
-import { retryFetch } from '@/lib/utils/utils'
+import { sb } from '@/lib/db/client'
+import { retryFetch } from '@/lib/utils/fetch'
 
 const mockDb = vi.mocked(sb)
 const mockRetryFetch = vi.mocked(retryFetch)
@@ -155,12 +155,12 @@ describe('chunking', () => {
       })
     })
 
-    it('should generate unique chunk IDs', () => {
+    it('should create chunks without chunk_id (database will generate)', () => {
       const chunks = createAnalysisChunks(mockResult, runId, role, changeDescription, context)
-      const chunkIds = chunks.map(c => c.chunk_id)
-      const uniqueIds = new Set(chunkIds)
 
-      expect(uniqueIds.size).toBe(chunkIds.length)
+      chunks.forEach(chunk => {
+        expect(chunk.chunk_id).toBeUndefined()
+      })
     })
   })
 
@@ -173,7 +173,6 @@ describe('chunking', () => {
 
       const chunks = [
         {
-          chunk_id: 'test-id-1',
           run_id: 'test-run',
           org_role: 'Engineer',
           composite: COMPOSITE_CHUNK_TYPES.ROLE_CHANGE_CONTEXT,
@@ -202,7 +201,6 @@ describe('chunking', () => {
 
       const chunks = [
         {
-          chunk_id: 'test-id-1',
           run_id: 'test-run',
           org_role: 'Engineer',
           composite: COMPOSITE_CHUNK_TYPES.ROLE_CHANGE_CONTEXT,
@@ -304,8 +302,8 @@ describe('chunking', () => {
         'Test context'
       )
 
-      expect(consoleSpy).toHaveBeenCalledWith('[chunking] Inserted 4 chunks - jobs enqueued by trigger')
-      expect(consoleSpy).toHaveBeenCalledWith('[chunking] Embedding processor: 3 jobs processed')
+      expect(consoleSpy).toHaveBeenCalledWith('[embedding] Inserted 4 chunks - jobs enqueued by trigger')
+      expect(consoleSpy).toHaveBeenCalledWith('[embedding] Embedding processor: 3 jobs processed')
 
       consoleSpy.mockRestore()
     })
@@ -365,8 +363,8 @@ describe('chunking', () => {
       )
 
       // Just verify the standard logs are called - debug logs aren't working in tests
-      expect(consoleSpy).toHaveBeenCalledWith('[chunking] Inserted 4 chunks - jobs enqueued by trigger')
-      expect(consoleSpy).toHaveBeenCalledWith('[chunking] Embedding processor: 3 jobs processed')
+      expect(consoleSpy).toHaveBeenCalledWith('[embedding] Inserted 4 chunks - jobs enqueued by trigger')
+      expect(consoleSpy).toHaveBeenCalledWith('[embedding] Embedding processor: 3 jobs processed')
 
       consoleSpy.mockRestore()
     })

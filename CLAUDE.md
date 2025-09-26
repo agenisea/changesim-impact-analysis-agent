@@ -90,7 +90,7 @@ interface DisplayProps {
 ## Import Conventions
 
 - Use absolute imports with `@/` prefix
-- Group imports: external libraries first, then internal modules
+- Group imports: external libraries first, then types, then internal modules by subdomain
 - Use kebab-case in import paths to match file names
 - **Remove unused imports** immediately to keep bundle size optimal
 - **Import from specific subdomain paths** for better organization:
@@ -103,7 +103,7 @@ import { submitImpactAnalysis } from '@/lib/client/impact-analysis'
 import { impactModel } from '@/lib/ai/ai-client'
 import { ANALYSIS_STATUS } from '@/lib/utils/constants'
 import { mapRiskLevel } from '@/lib/business/evaluator'
-import { sb } from '@/lib/db/db'
+import { sb } from '@/lib/db/client'
 import { getSessionIdCookie } from '@/lib/server/session'
 import { cn } from '@/lib/client/ui-utils'
 import { ImpactAnalysisInput } from '@/types/impact-analysis'
@@ -241,7 +241,7 @@ import { ImpactAnalysisInput } from '@/types/impact-analysis'
 
 ### Constants Management
 
-- **Use constants for magic strings** - Always define reusable string literals in `lib/config/constants.ts`
+- **Use constants for magic strings** - Always define reusable string literals in `lib/utils/constants.ts`
 - **Cache status consistency** - Use `CACHE_STATUS` constants for both headers and meta fields to ensure identical values
 - **Analysis status consistency** - Use `ANALYSIS_STATUS` constants across API routes and UI components
 - **Single source of truth** - Import constants rather than duplicating string literals across files
@@ -249,7 +249,7 @@ import { ImpactAnalysisInput } from '@/types/impact-analysis'
 
 Example:
 ```typescript
-// lib/config/constants.ts
+// lib/utils/constants.ts
 export const ANALYSIS_STATUS = {
   COMPLETE: 'complete',
   PENDING: 'pending',
@@ -262,6 +262,35 @@ export type AnalysisStatus = typeof ANALYSIS_STATUS[keyof typeof ANALYSIS_STATUS
 status: ANALYSIS_STATUS.COMPLETE
 case ANALYSIS_STATUS.PENDING:
 ```
+
+### Co-located Constants
+
+When constants are implementation-specific, keep them close to where they're used rather than in the global constants file:
+
+- **Database table names** → within database files (`lib/db/embeddings.ts`)
+- **API endpoints and paths** → within API client files (`lib/client/impact-analysis.ts`)
+- **HTTP headers and methods** → within fetch utility files (`lib/utils/fetch.ts`)
+- **Build-time placeholders** → within configuration files (`lib/db/client.ts`)
+
+**Extract to `lib/utils/constants.ts` only when:**
+- Value is used across **multiple domains** (like `ANALYSIS_STATUS`)
+- Constant represents **business rules** (like risk levels)
+- Value needs **global consistency** (like app-wide timeouts)
+- Type definitions are shared (like `CacheStatus`)
+
+Example of co-located constants:
+```typescript
+// lib/db/embeddings.ts - Database-specific constants
+const CHUNKS_TABLE = 'changesim_impact_analysis_run_chunks'
+const EDGE_FUNCTIONS_PATH = '/functions/v1'
+const EMBEDDING_PROCESSOR_FUNCTION = 'embedding-processor'
+
+// lib/db/client.ts - Build-time configuration
+const PLACEHOLDER_URL = 'https://placeholder.supabase.co'
+const PLACEHOLDER_KEY = 'placeholder-key'
+```
+
+This approach provides better **encapsulation** and **maintainability** while avoiding unnecessary global coupling.
 
 ### Dead Code Prevention
 
