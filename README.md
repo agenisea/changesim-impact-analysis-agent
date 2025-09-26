@@ -58,7 +58,8 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
 - **Risk Logic**: Multi-layered evaluation system with enum normalization, decision trace bounds, and guardrails
 - **Testing**: Comprehensive test suite (90 tests) with domain-organized structure covering business logic, API integration, and UI components
 - **Code Quality**: ESLint + Prettier with strict TypeScript and kebab-case naming conventions
-- **Deployment**: Containerized with Docker and deployed on Fly.io, but runs locally with `pnpm dev`
+- **Deployment**: Containerized with Docker (multi-stage builds), nginx reverse proxy, and deployed on Fly.io with auto-scaling
+- **Security**: Comprehensive security headers, non-root execution, and secure error handling
 
 ---
 
@@ -120,7 +121,7 @@ Dimensions              Alignment                                   Bounds      
 1. **Clone the repository**
 
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/agenisea/changesim-impact-analysis-agent.git
    cd changesim-impact-analysis-agent
    ```
 
@@ -222,8 +223,9 @@ Dimensions              Alignment                                   Bounds      
 The `fly.toml` file is configured with:
 - **Resource allocation**: 1 shared CPU, 1GB memory
 - **Auto-scaling**: Machines start/stop based on traffic
-- **Health checks**: Automatic HTTP health monitoring
+- **Health checks**: Automatic HTTP health monitoring with `/health` endpoint
 - **HTTPS**: Automatic SSL certificate management
+- **Security**: Multi-stage Docker build with non-root user execution
 
 ### Benefits of Fly.io Deployment
 
@@ -232,6 +234,45 @@ The `fly.toml` file is configured with:
 - **Longer request timeouts**: No 10-second limit for embedding processing
 - **Container flexibility**: Full control over the runtime environment
 - **Global edge deployment**: Deploy close to your users
+
+### Security & Reliability
+
+The application implements multiple security layers:
+
+- **Container Security**: Multi-stage Docker builds with non-root user execution
+- **Process Isolation**: nginx runs as root for port 80 binding, Next.js as dedicated `nextjs` user
+- **Health Monitoring**: Redundant health checks (nginx + Next.js endpoints) with proper startup sequencing
+- **Error Handling**: Secure error responses that don't expose sensitive internal information
+- **Data Privacy**: No sensitive data logged or exposed in API responses
+- **Network Security**: Comprehensive security headers via nginx reverse proxy
+
+### Troubleshooting
+
+**Health Check Failures**
+```bash
+# Check application logs
+fly logs
+
+# View machine status
+fly status
+
+# Scale up if needed
+fly scale count 1
+```
+
+**Container Issues**
+```bash
+# SSH into running machine for debugging
+fly ssh console
+
+# Restart the application
+fly machine restart
+```
+
+**Database Connection Issues**
+- Verify `SUPABASE_URL` and `SUPABASE_KEY` are set correctly
+- Check Supabase project status and connection limits
+- Ensure database schema is up to date with `changesim_impact_analysis.sql`
 
 ---
 

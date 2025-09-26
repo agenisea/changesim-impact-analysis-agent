@@ -188,6 +188,102 @@ import { ImpactAnalysisInput } from '@/types/impact-analysis'
   - **Debug mode**: `true` - Full request/response logging, cache details, and internal state
   - **Security**: Always wrap debug logs with `if (SHOW_DEBUG_LOGS)` conditional checks
 
+### Container and Infrastructure Security
+
+#### Docker Security Best Practices
+
+- **Principle of Least Privilege**: Run services with minimal required permissions
+  - ✅ Next.js runs as non-root `nextjs` user (uid: 1001)
+  - ✅ nginx runs as root only for port 80 binding, workers as `nginx` user
+  - ❌ Never run application code as root user
+- **Multi-stage builds**: Use separate build and runtime stages to minimize attack surface
+- **Minimal base images**: Use Alpine Linux for smaller attack surface and faster builds
+- **Security updates**: Always include `apk add --upgrade` for base packages like `busybox`
+- **File permissions**: Explicitly set ownership and permissions for all directories and files
+
+#### Process Management Security
+
+- **Fail-fast behavior**: Always use `set -e` in shell scripts to prevent execution continuation on errors
+- **PID tracking**: Properly manage process lifecycles with PID variables
+- **Graceful shutdown**: Use `wait` commands for clean process termination
+- **Timeout limits**: Set reasonable timeouts to prevent indefinite hanging processes
+- **Error isolation**: Separate error handling for different services (nginx vs Next.js)
+
+#### Network Security
+
+- **Port binding restrictions**: Only bind to required ports (80 for nginx, 3000 internal for Next.js)
+- **Localhost-only checks**: Use `localhost` for internal health checks, never external IPs
+- **Secure health checks**: Use `nc -z` for port availability instead of HTTP requests when possible
+- **Security headers**: Ensure nginx includes comprehensive security headers:
+  ```
+  X-Frame-Options: SAMEORIGIN
+  X-Content-Type-Options: nosniff
+  X-XSS-Protection: 1; mode=block
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Referrer-Policy: strict-origin-when-cross-origin
+  ```
+
+#### Dependency Security
+
+- **Minimal dependencies**: Only install packages that are actively used
+- **Security-focused tools**: Prefer established, minimal tools (`netcat-openbsd` over `wget`)
+- **Regular updates**: Keep base images and critical packages updated
+- **No dev dependencies in production**: Use multi-stage builds to exclude development tools
+
+### API Security Guidelines
+
+#### Error Handling Security
+
+- **Information disclosure prevention**: Never expose detailed error messages to clients
+  - ✅ Log detailed errors server-side only
+  - ✅ Return generic error messages to clients
+  - ❌ Never include stack traces, file paths, or internal state in client responses
+- **Consistent error formats**: Use standardized error response structure without sensitive details
+
+```typescript
+// ✅ Secure error handling
+try {
+  // operation
+} catch (error) {
+  console.error('[service-name] Detailed error:', error) // Server-side only
+  return NextResponse.json({ status: 'error' }, { status: 500 }) // Client-safe
+}
+
+// ❌ Insecure error handling
+catch (error) {
+  return NextResponse.json({ error: error.message }, { status: 500 }) // Exposes internals
+}
+```
+
+#### Health Check Security
+
+- **No sensitive data**: Health endpoints should only return status and timestamp
+- **Cache prevention**: Include cache-busting headers to prevent information leakage
+- **Minimal response**: Keep health check responses as simple as possible
+- **Rate limiting consideration**: Health checks should not expose timing attack vectors
+
+### Input Validation and Sanitization
+
+- **Server-side validation**: Always validate inputs on the server, never trust client-side validation alone
+- **Type safety**: Use TypeScript strictly to prevent type-related vulnerabilities
+- **Input sanitization**: Sanitize all user inputs before database operations or external API calls
+- **SQL injection prevention**: Use parameterized queries and ORM methods instead of string concatenation
+- **XSS prevention**: Ensure all user content is properly escaped in UI components
+
+### Authentication and Authorization
+
+- **Session management**: Use secure session handling with proper expiration
+- **Token security**: Never log or expose authentication tokens in responses
+- **Permission boundaries**: Implement proper role-based access control
+- **Audit trails**: Log security-relevant actions for monitoring and compliance
+
+### Monitoring and Incident Response
+
+- **Security logging**: Log security events without exposing sensitive data
+- **Anomaly detection**: Monitor for unusual patterns in requests and system behavior
+- **Incident response**: Have clear procedures for security incident handling
+- **Regular security reviews**: Periodically review code for security vulnerabilities
+
 ## UX and Accessibility Guidelines
 
 ### User Experience Principles

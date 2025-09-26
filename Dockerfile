@@ -1,7 +1,7 @@
 FROM node:20-alpine AS base
 
 # Install nginx and security tools
-RUN apk add --no-cache nginx \
+RUN apk add --no-cache nginx netcat-openbsd \
     && apk add --no-cache --upgrade busybox
 
 # Install dependencies only when needed
@@ -76,15 +76,42 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Create startup script
 COPY <<EOF /start.sh
 #!/bin/sh
+set -e
+
+# Function to check if Next.js is ready
+wait_for_nextjs() {
+    echo "Waiting for Next.js to start on port 3000..."
+    for i in \$(seq 1 30); do
+        # Use nc (netcat) instead of wget for security - only checks port availability
+        if nc -z localhost 3000 2>/dev/null; then
+            echo "Next.js is ready!"
+            return 0
+        fi
+        echo "Waiting... (\$i/30)"
+        sleep 2
+    done
+    echo "Timeout waiting for Next.js to start"
+    exit 1
+}
 
 # Create PID directory for nginx
 mkdir -p /run/nginx
 
-# Start nginx as root (for port 80 binding) in background
-nginx -g 'daemon off;' &
+# Start Next.js in background first
+echo "Starting Next.js..."
+su -s /bin/ash nextjs -c 'cd /app && export PATH="/usr/local/bin:$PATH" && node server.js' &
+NEXTJS_PID=\$!
 
-# Switch to nextjs user and start Next.js application
-exec su -s /bin/ash nextjs -c 'cd /app && export PATH="/usr/local/bin:$PATH" && node server.js'
+# Wait for Next.js to be ready
+wait_for_nextjs
+
+# Start nginx as root (for port 80 binding) in background
+echo "Starting nginx..."
+nginx -g 'daemon off;' &
+NGINX_PID=\$!
+
+# Wait for any process to exit
+wait
 EOF
 
 RUN chmod +x /start.sh
