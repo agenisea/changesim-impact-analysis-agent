@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone', // Required for Docker deployment
   eslint: {
     ignoreDuringBuilds: false,
   },
@@ -9,6 +10,9 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  experimental: {
+    serverComponentsExternalPackages: ['@supabase/supabase-js']
+  }
 }
 
 export default nextConfig

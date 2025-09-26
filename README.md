@@ -2,8 +2,8 @@
 
 > _Predict how organizational changes affect roles and teams_
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/ppenasb-5242s-projects/v0-project1)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/projects/mBdJcC3KTRJ)
+[![Deployed on Fly.io](https://img.shields.io/badge/Deployed%20on-Fly.io-black?style=for-the-badge&logo=fly.io)](https://fly.io)
+[![Built with Next.js](https://img.shields.io/badge/Built%20with-Next.js-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
 
 ---
 
@@ -29,7 +29,7 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
 ## 🛠️ How It Works
 
 1. Enter a **role/team** and a **proposed change** in the sidebar form
-2. The agent calls an OpenAI model through the [Vercel AI SDK](https://ai-sdk.dev/) using a strict Zod schema
+2. The agent calls an OpenAI model through the [AI SDK](https://ai-sdk.dev/) using a strict Zod schema
 3. The response is validated, risk-scored, and rendered as an interactive report artifact
    - Example: _“Sales team will need retraining on the new CRM, expect short-term productivity dips, schedule hands-on workshops to smooth adoption.”_
 
@@ -47,7 +47,7 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
 
 - **Framework**: Next.js App Router (15.x) with React 19 and TypeScript (strict mode)
 - **UI**: Tailwind CSS 4, Radix UI, custom artifact components
-- **AI Integration**: Vercel AI SDK (`ai`) with `@ai-sdk/openai` for structured object generation
+- **AI Integration**: AI SDK (`ai`) with `@ai-sdk/openai` for structured object generation
 - **Database**: Supabase with PostgreSQL for run logging, session tracking, and caching
 - **Architecture**: Domain-driven folder structure with clear separation of concerns
   - `lib/ai/`: AI model configuration and prompts
@@ -58,7 +58,7 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
 - **Risk Logic**: Multi-layered evaluation system with enum normalization, decision trace bounds, and guardrails
 - **Testing**: Comprehensive test suite (90 tests) with domain-organized structure covering business logic, API integration, and UI components
 - **Code Quality**: ESLint + Prettier with strict TypeScript and kebab-case naming conventions
-- **Deployment**: Optimized for Vercel (see badge), but runs locally with `pnpm dev`
+- **Deployment**: Containerized with Docker and deployed on Fly.io, but runs locally with `pnpm dev`
 
 ---
 
@@ -171,6 +171,67 @@ Dimensions              Alignment                                   Bounds      
    pnpm test:watch        # Run tests in watch mode during development
    pnpm build             # Build for production
    ```
+
+## 🚀 Deployment to Fly.io
+
+### Prerequisites
+
+- [Fly CLI](https://fly.io/docs/flyctl/install/) installed and authenticated
+- Docker installed locally (for testing)
+
+### Deployment Steps
+
+1. **Install and authenticate with Fly CLI**
+   ```bash
+   # Install Fly CLI (macOS)
+   curl -L https://fly.io/install.sh | sh
+
+   # Or using Homebrew
+   brew install flyctl
+
+   # Login to Fly.io
+   fly auth login
+   ```
+
+2. **Launch your app** (one-time setup)
+   ```bash
+   fly launch --no-deploy
+   ```
+   This creates the app and generates `fly.toml` configuration.
+
+3. **Set environment variables**
+   ```bash
+   fly secrets set OPENAI_API_KEY=your_openai_api_key_here
+   fly secrets set SUPABASE_URL=your_supabase_project_url
+   fly secrets set SUPABASE_KEY=your_supabase_service_role_key
+   fly secrets set SHOW_DEBUG_LOGS=false
+   ```
+
+4. **Deploy your application**
+   ```bash
+   fly deploy
+   ```
+
+5. **Open your deployed app**
+   ```bash
+   fly open
+   ```
+
+### Fly.io Configuration
+
+The `fly.toml` file is configured with:
+- **Resource allocation**: 1 shared CPU, 1GB memory
+- **Auto-scaling**: Machines start/stop based on traffic
+- **Health checks**: Automatic HTTP health monitoring
+- **HTTPS**: Automatic SSL certificate management
+
+### Benefits of Fly.io Deployment
+
+- **No cold starts**: Unlike serverless, your app stays warm
+- **Better database connections**: Persistent connections to Supabase
+- **Longer request timeouts**: No 10-second limit for embedding processing
+- **Container flexibility**: Full control over the runtime environment
+- **Global edge deployment**: Deploy close to your users
 
 ---
 
