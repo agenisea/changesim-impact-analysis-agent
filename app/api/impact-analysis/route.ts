@@ -12,6 +12,7 @@ import { sb, type ChangeSimImpactAnalysisRunInsert } from '@/lib/db/client'
 import { getSessionIdCookie } from '@/lib/server/session'
 import { makeInputHash } from '@/lib/utils/hash'
 import { PROMPT_VERSION, PROCESS_NAME, TEMPERATURE, MAX_OUTPUT_TOKENS, CACHE_STATUS, ANALYSIS_STATUS, type CacheStatus } from '@/lib/utils/constants'
+import { checkSessionCostLimit, trackTokenUsage } from '@/lib/ai/persistent-cost-tracker'
 
 const SHOW_DEBUG_LOGS = process.env.SHOW_DEBUG_LOGS === 'true'
 
@@ -157,6 +158,20 @@ async function _POST(request: NextRequest): Promise<NextResponse> {
 
     let runId = `ia_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
 
+    // Check session cost limit before AI call
+    const sessionCheck = await checkSessionCostLimit(sessionId, 5.00) // $5 per session limit
+    if (!sessionCheck.allowed) {
+      if (SHOW_DEBUG_LOGS) {
+        console.log(`[impact-analysis] Session cost limit exceeded: $${sessionCheck.currentSpend.toFixed(4)}`)
+      }
+      return NextResponse.json({
+        error: 'Session cost limit exceeded',
+        message: 'You have reached the spending limit for this session. Please start a new session to continue.',
+        currentSpend: sessionCheck.currentSpend,
+        limit: 5.00
+      }, { status: 429 })
+    }
+
     // Generate impact analysis using AI SDK with structured outputs
     const { object: parsedResult, usage } = await generateObject({
       model: impactModel,
@@ -300,6 +315,11 @@ Return only valid JSON matching the ImpactAnalysisResult schema.`,
         // Update runId with the actual database UUID
         if (insertedRun?.run_id) {
           runId = insertedRun.run_id
+
+          // Track token usage and cost (async, don't block response)
+          trackTokenUsage(runId, usage, actualModel, 'single_agent').catch(error => {
+            console.error('[impact-analysis] Cost tracking failed:', error.message)
+          })
         }
 
         // Create embeddings for the analysis (async, don't block response)

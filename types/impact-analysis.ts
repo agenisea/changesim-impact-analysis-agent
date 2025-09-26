@@ -27,3 +27,39 @@ export type ImpactAnalysisResult = {
     _cache?: CacheStatus // Cache source: 'hit', 'race', 'miss', 'session'
   }
 }
+
+// Agentic analysis specific types - uses a more lenient type for base_analysis
+export type AgenticAnalysisResult = {
+  base_analysis: {
+    analysis_summary: string
+    risk_level: 'low' | 'medium' | 'high' | 'critical'
+    risk_factors: string[]
+    risk_scoring: ImpactAnalysisResult['risk_scoring']
+    decision_trace: string[]
+    sources: { title: string; url: string }[]
+  }
+  pattern_insights: {
+    common_patterns: string[]
+    potential_pitfalls: string[]
+    success_factors: string[]
+    contextual_insights: string[]
+  }
+  role_insights: {
+    role_challenges: string[]
+    adaptation_strategies: string[]
+    stakeholder_considerations: string[]
+    timeline_expectations: string[]
+  }
+  cross_reference: {
+    similar_scenarios: string[]
+    comparative_risks: string[]
+    lessons_learned: string[]
+  }
+  dynamic_insights: {
+    context_gaps?: string[]
+    emergent_patterns: string[]
+    strategic_recommendations: string[]
+    risk_refinements: string[]
+    implementation_priorities: string[]
+  }
+}
