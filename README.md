@@ -108,6 +108,26 @@ Dimensions              Alignment                                   Bounds      
    
 ---
 
+## 🔐 API Authentication
+
+ChangeSim implements a dual-mode authentication system:
+
+### **Frontend Access (Same-Origin)**
+- Web interface calls APIs without tokens
+- Uses referer header validation for same-origin detection
+- Seamless user experience with built-in security
+
+### **External API Access**
+- Requires API token via `Authorization: Bearer <token>` header
+- Alternative `X-API-Key: <token>` header support
+- Protects against unauthorized external usage
+
+### **API Endpoints**
+- **POST** `/api/impact-analysis` - Generate impact analysis (requires auth for external calls)
+- **GET** `/health` - Application health status (requires auth for external calls)
+
+---
+
 ## 🚀 Setup
 
 ### Prerequisites
@@ -225,9 +245,9 @@ Dimensions              Alignment                                   Bounds      
 The `fly.toml` file is configured with:
 - **Resource allocation**: 1 shared CPU, 1GB memory
 - **Auto-scaling**: Machines start/stop based on traffic
-- **Health checks**: Automatic HTTP health monitoring with `/health` endpoint
 - **HTTPS**: Automatic SSL certificate management
 - **Security**: Multi-stage Docker build with non-root user execution
+- **API Authentication**: Token-based security for external API access
 
 ### Benefits of Fly.io Deployment
 
@@ -243,18 +263,27 @@ The application implements multiple security layers:
 
 - **Container Security**: Multi-stage Docker builds with non-root user execution
 - **Process Isolation**: nginx runs as root for port 80 binding, Next.js as dedicated `nextjs` user
-- **Health Monitoring**: Redundant health checks (nginx + Next.js endpoints) with proper startup sequencing
+- **API Authentication**: Token-based security with same-origin detection for frontend calls
 - **Error Handling**: Secure error responses that don't expose sensitive internal information
 - **Data Privacy**: No sensitive data logged or exposed in API responses
 - **Network Security**: Comprehensive security headers via nginx reverse proxy
 
 ### Troubleshooting
 
-**Health Check Failures**
+**Authentication Issues**
 ```bash
-# Check application logs
-fly logs
+# Check if API_TOKEN is set correctly
+fly secrets list
 
+# Test API endpoint with token
+curl -H "Authorization: Bearer YOUR_API_TOKEN" https://your-app.fly.dev/api/impact-analysis
+
+# View application logs
+fly logs
+```
+
+**Deployment Issues**
+```bash
 # View machine status
 fly status
 

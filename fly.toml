@@ -21,15 +21,6 @@ primary_region = 'sjc'
   min_machines_running = 0
   processes = ['app']
 
-  [[http_service.checks]]
-    method = "GET"
-    path = "/health"
-    protocol = "http"
-    interval = "15s"
-    timeout = "5s"
-    grace_period = "10s"
-    headers = { "Authorization" = "Bearer ${API_TOKEN}" }
-
 [[vm]]
   memory = '1gb'
   cpu_kind = 'shared'
