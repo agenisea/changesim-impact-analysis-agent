@@ -196,6 +196,9 @@ Return only valid JSON matching the ImpactAnalysisResult schema.`,
       )
     }
 
+    // Note: ruleApplied tracking is available for future transparency needs
+    // Currently only org-cap requires explanation; other rules work silently
+
     // Ensure decision trace is always within bounds (defense in depth)
     if (parsedResult.decision_trace) {
       parsedResult.decision_trace = boundDecisionTrace(parsedResult.decision_trace)

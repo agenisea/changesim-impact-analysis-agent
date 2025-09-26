@@ -74,6 +74,6 @@ export function mapRiskLevel(
 
   // ---- MEDIUM / LOW ----
   if (majorFactors === 1) return { level: 'medium' }
-  if (s <= scopeRank.team && sev <= 1 && h === 0) return { level: 'low' }
+  if (s <= scopeRank.team && sev <= 1 && h <= 1) return { level: 'low' }
   return { level: 'medium' }
 }
