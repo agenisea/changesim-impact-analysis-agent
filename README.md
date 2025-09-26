@@ -45,9 +45,9 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
 
 ## ⚙️ Tech Stack
 
-- **Framework**: Next.js App Router (15.x) with React 19 and TypeScript (strict mode)
-- **UI**: Tailwind CSS 4, Radix UI, custom artifact components
-- **AI Integration**: AI SDK (`ai`) with `@ai-sdk/openai` for structured object generation
+- **Framework**: Next.js App Router (15.5.4) with React 19.1 and TypeScript (strict mode)
+- **UI**: Tailwind CSS 4, Radix UI, custom artifact components with mobile-optimized touch handling
+- **AI Integration**: AI SDK (`ai`) with `@ai-sdk/openai` (5.23.1) for structured object generation
 - **Database**: Supabase with PostgreSQL for run logging, session tracking, and caching
 - **Architecture**: Domain-driven folder structure with clear separation of concerns
   - `lib/ai/`: AI model configuration and prompts
@@ -56,7 +56,7 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
   - `lib/server/`: Server-only utilities (session management)
   - `lib/db/`: Database clients and queries
 - **Risk Logic**: Multi-layered evaluation system with enum normalization, decision trace bounds, and guardrails
-- **Testing**: Comprehensive test suite (90 tests) with domain-organized structure covering business logic, API integration, and UI components
+- **Testing**: Comprehensive test suite (113 tests) with domain-organized structure covering business logic, API integration, and UI components
 - **Code Quality**: ESLint + Prettier with strict TypeScript and kebab-case naming conventions
 - **Deployment**: Containerized with Docker (multi-stage builds), nginx reverse proxy, and deployed on Fly.io with auto-scaling
 - **Security**: Comprehensive security headers, non-root execution, and secure error handling

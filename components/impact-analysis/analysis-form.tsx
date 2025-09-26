@@ -94,8 +94,9 @@ export function AnalysisForm({ initial, onSubmit, busy = false }: AnalysisFormPr
           onClick={handleSubmit}
           disabled={busy}
           aria-busy={busy}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white active:bg-blue-800 active:scale-[0.98] transition-transform"
           size="lg"
+          type="button"
         >
           {busy ? (
             <>
