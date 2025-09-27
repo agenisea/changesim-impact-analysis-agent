@@ -12,7 +12,17 @@ import { impactModel } from '@/lib/ai/ai-client'
 import { sb, type ChangeSimImpactAnalysisRunInsert } from '@/lib/db/client'
 import { getSessionIdCookie } from '@/lib/server/session'
 import { makeInputHash } from '@/lib/utils/hash'
-import { PROMPT_VERSION, PROCESS_NAME, TEMPERATURE, MAX_OUTPUT_TOKENS, CACHE_STATUS, ANALYSIS_STATUS, AGENT_TYPE, type CacheStatus, type AgentType } from '@/lib/utils/constants'
+import {
+  PROMPT_VERSION,
+  PROCESS_NAME,
+  TEMPERATURE,
+  MAX_OUTPUT_TOKENS,
+  CACHE_STATUS,
+  ANALYSIS_STATUS,
+  AGENT_TYPE,
+  type CacheStatus,
+  type AgentType,
+} from '@/lib/utils/constants'
 
 const SHOW_DEBUG_LOGS = process.env.SHOW_DEBUG_LOGS === 'true'
 
@@ -26,7 +36,7 @@ const impactAnalysisInputSchema = z.object({
 const impactAnalysisResultSchema = z.object({
   analysis_summary: z.string(),
   risk_level: z.enum(['low', 'medium', 'high', 'critical']),
-  risk_rationale: z.string().optional(),
+  risk_rationale: z.string().min(1, 'Risk rationale is required'),
   risk_factors: z.array(z.string()).min(1).max(4),
   risk_scoring: z.object({
     scope: z.enum(['individual', 'team', 'organization', 'national', 'global']),
@@ -46,7 +56,9 @@ const impactAnalysisResultSchema = z.object({
   meta: z
     .object({
       timestamp: z.string(),
-      status: z.enum([ANALYSIS_STATUS.COMPLETE, ANALYSIS_STATUS.PENDING, ANALYSIS_STATUS.ERROR]).optional(),
+      status: z
+        .enum([ANALYSIS_STATUS.COMPLETE, ANALYSIS_STATUS.PENDING, ANALYSIS_STATUS.ERROR])
+        .optional(),
       run_id: z.string().optional(),
       role: z.string().optional(),
       change_description: z.string().optional(),
@@ -109,66 +121,72 @@ async function _POST(request: NextRequest): Promise<NextResponse> {
         console.log('[impact-analysis] Checking cache for existing session')
       }
 
-      const { data: cached, error: cacheError } = await sb
-        .from('changesim_impact_analysis_runs')
-        .select('*')
-        .eq('session_id', sessionId)
-        .eq('input_hash', inputHash)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
+      try {
+        const { data: cached, error: cacheError } = await sb
+          .from('changesim_impact_analysis_runs')
+          .select('*')
+          .eq('session_id', sessionId)
+          .eq('input_hash', inputHash)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
 
-      if (cacheError) {
-        console.error('[impact-analysis] Cache lookup error:', cacheError)
-        // Continue to fresh analysis
-      } else if (cached) {
-        if (SHOW_DEBUG_LOGS) {
-          console.log('[impact-analysis] Cache hit! Returning cached result')
-        }
+        if (cacheError) {
+          console.error('[impact-analysis] Cache lookup error:', cacheError)
+          // Continue to fresh analysis
+        } else if (cached) {
+          if (SHOW_DEBUG_LOGS) {
+            console.log('[impact-analysis] Cache hit! Returning cached result')
+          }
 
-        // Transform cached data to match expected ImpactResult format - NO SENSITIVE DATA
-        const cachedMeta: ImpactAnalysisResult['meta'] = {
-          timestamp: cached.created_at,
-          status: ANALYSIS_STATUS.COMPLETE,
-          run_id: cached.run_id,
-          role: cached.role,
-          change_description: cached.change_description,
-          context: cached.context || null, // Always include context field
-          _cache: CACHE_STATUS.HIT,
-          agent_type: cached.meta?.agent_type || AGENT_TYPE.SINGLE_AGENT
-        }
+          // Transform cached data to match expected ImpactResult format - NO SENSITIVE DATA
+          const cachedMeta: ImpactAnalysisResult['meta'] = {
+            timestamp: cached.created_at,
+            status: ANALYSIS_STATUS.COMPLETE,
+            run_id: cached.run_id,
+            role: cached.role,
+            change_description: cached.change_description,
+            context: cached.context || null, // Always include context field
+            _cache: CACHE_STATUS.HIT,
+            agent_type: cached.meta?.agent_type || AGENT_TYPE.SINGLE_AGENT,
+          }
 
-        // Only include RAG diagnostics if it was an agentic-rag strategy
-        if (cached.meta?.agent_type === AGENT_TYPE.AGENTIC_RAG && cached.meta?.rag) {
-          cachedMeta.rag = {
-            match_count: cached.meta.rag.match_count,
-            average_similarity: cached.meta.rag.average_similarity
+          // Only include RAG diagnostics if it was an agentic-rag strategy
+          if (cached.meta?.agent_type === AGENT_TYPE.AGENTIC_RAG && cached.meta?.rag) {
+            cachedMeta.rag = {
+              match_count: cached.meta.rag.match_count,
+              average_similarity: cached.meta.rag.average_similarity,
+            }
+          }
+
+          const cachedResult: ImpactAnalysisResult = {
+            analysis_summary: cached.analysis_summary,
+            risk_level: cached.risk_level as 'low' | 'medium' | 'high' | 'critical',
+            risk_rationale: cached.risk_rationale || 'Cached analysis result',
+            risk_factors: cached.risk_factors || [],
+            risk_scoring: cached.risk_scoring as any,
+            decision_trace: cached.decision_trace || [],
+            sources: cached.sources || [],
+            meta: cachedMeta,
+          }
+
+          const response = NextResponse.json(cachedResult)
+          response.headers.set('X-ChangeSim-Cache', CACHE_STATUS.HIT)
+          response.headers.set('X-ChangeSim-Prompt-Version', PROMPT_VERSION)
+          response.headers.set('X-ChangeSim-Model', actualModel)
+          const cachedType = cachedResult.meta?.agent_type
+          if (typeof cachedType === 'string') {
+            response.headers.set('X-ChangeSim-Agent-Type', cachedType)
+          }
+          return response
+        } else {
+          if (SHOW_DEBUG_LOGS) {
+            console.log('[impact-analysis] Cache miss - proceeding with fresh analysis')
           }
         }
-
-        const cachedResult: ImpactAnalysisResult = {
-          analysis_summary: cached.analysis_summary,
-          risk_level: cached.risk_level as 'low' | 'medium' | 'high' | 'critical',
-          risk_factors: cached.risk_factors || [],
-          risk_scoring: cached.risk_scoring as any,
-          decision_trace: cached.decision_trace || [],
-          sources: cached.sources || [],
-          meta: cachedMeta
-        }
-
-        const response = NextResponse.json(cachedResult)
-        response.headers.set('X-ChangeSim-Cache', CACHE_STATUS.HIT)
-        response.headers.set('X-ChangeSim-Prompt-Version', PROMPT_VERSION)
-        response.headers.set('X-ChangeSim-Model', actualModel)
-        const cachedType = cachedResult.meta?.agent_type
-        if (typeof cachedType === 'string') {
-          response.headers.set('X-ChangeSim-Agent-Type', cachedType)
-        }
-        return response
-      } else {
-        if (SHOW_DEBUG_LOGS) {
-          console.log('[impact-analysis] Cache miss - proceeding with fresh analysis')
-        }
+      } catch (cacheError) {
+        console.error('[impact-analysis] Cache lookup failed:', cacheError)
+        // Continue to fresh analysis
       }
     } else if (forceFresh) {
       if (SHOW_DEBUG_LOGS) {
@@ -203,13 +221,16 @@ async function _POST(request: NextRequest): Promise<NextResponse> {
         matchCount: ragAttempt.diagnostics.matchCount,
         averageSimilarity: ragAttempt.diagnostics.averageSimilarity,
       }
-      console.log('[impact-analysis] ✅ AGENTIC RAG SUCCESS - Enhanced analysis with dynamic prompting', {
-        agentType: AGENT_TYPE.AGENTIC_RAG,
-        ragMatches: ragDiagnostics.matchCount,
-        averageSimilarity: ragDiagnostics.averageSimilarity.toFixed(3),
-        focusAreas: ragAttempt.diagnostics.focusAreas,
-        dynamicPromptUsed: ragAttempt.diagnostics.dynamicPromptUsed
-      })
+      console.log(
+        '[impact-analysis] ✅ AGENTIC RAG SUCCESS - Enhanced analysis with dynamic prompting',
+        {
+          agentType: AGENT_TYPE.AGENTIC_RAG,
+          ragMatches: ragDiagnostics.matchCount,
+          averageSimilarity: ragDiagnostics.averageSimilarity.toFixed(3),
+          focusAreas: ragAttempt.diagnostics.focusAreas,
+          dynamicPromptUsed: ragAttempt.diagnostics.dynamicPromptUsed,
+        }
+      )
     } else {
       // FALLBACK TO ORIGINAL SINGLE-AGENT METHOD
       let fallbackReason = 'unknown'
@@ -217,7 +238,7 @@ async function _POST(request: NextRequest): Promise<NextResponse> {
         fallbackReason = 'agentic-rag-error'
         console.error('[impact-analysis] ❌ AGENTIC RAG ERROR - Falling back to single-agent', {
           error: ragAttempt.error.message,
-          fallbackStrategy: 'single-agent'
+          fallbackStrategy: 'single-agent',
         })
       }
       if ('skipped' in ragAttempt) {
@@ -225,9 +246,10 @@ async function _POST(request: NextRequest): Promise<NextResponse> {
         console.log('[impact-analysis] ⚠️  AGENTIC RAG SKIPPED - Falling back to single-agent', {
           reason: ragAttempt.reason,
           fallbackStrategy: 'single-agent',
-          explanation: ragAttempt.reason === 'insufficient-context'
-            ? 'Not enough historical data for meaningful RAG enhancement'
-            : 'Other reason for skipping agentic RAG'
+          explanation:
+            ragAttempt.reason === 'insufficient-context'
+              ? 'Not enough historical data for meaningful RAG enhancement'
+              : 'Other reason for skipping agentic RAG',
         })
       }
 
@@ -236,7 +258,7 @@ async function _POST(request: NextRequest): Promise<NextResponse> {
         systemPrompt: 'IMPACT_ANALYSIS_SYSTEM_PROMPT (original)',
         dynamicPrompting: false,
         ragEnhancement: false,
-        roleSpecificContext: false
+        roleSpecificContext: false,
       })
 
       const fallback = await generateObject({
@@ -260,7 +282,7 @@ Return only valid JSON matching the ImpactAnalysisResult schema.`,
       console.log('[impact-analysis] ✅ FALLBACK COMPLETED - Single-agent analysis successful', {
         agentType: AGENT_TYPE.SINGLE_AGENT,
         fallbackReason,
-        tokenUsage: usage
+        tokenUsage: usage,
       })
     }
 
@@ -295,7 +317,6 @@ Return only valid JSON matching the ImpactAnalysisResult schema.`,
     if (parsedResult.decision_trace) {
       parsedResult.decision_trace = boundDecisionTrace(parsedResult.decision_trace)
     }
-
 
     if (parsedResult.risk_level) {
       parsedResult.risk_level = parsedResult.risk_level.toLowerCase() as
@@ -342,6 +363,7 @@ Return only valid JSON matching the ImpactAnalysisResult schema.`,
         context: context || null,
         analysis_summary: parsedResult.analysis_summary,
         risk_level: parsedResult.risk_level,
+        risk_rationale: parsedResult.risk_rationale,
         risk_factors: parsedResult.risk_factors,
         risk_scoring: parsedResult.risk_scoring,
         decision_trace: parsedResult.decision_trace,
@@ -363,7 +385,7 @@ Return only valid JSON matching the ImpactAnalysisResult schema.`,
           if (SHOW_DEBUG_LOGS) {
             console.log('[impact-analysis] Race condition detected, fetching existing result')
           }
-          const { data: raced } = await sb
+          const { data: raced, error: raceError } = await sb
             .from('changesim_impact_analysis_runs')
             .select('*')
             .eq('session_id', sessionId)
@@ -372,7 +394,10 @@ Return only valid JSON matching the ImpactAnalysisResult schema.`,
             .limit(1)
             .maybeSingle()
 
-          if (raced) {
+          if (raceError) {
+            console.error('[impact-analysis] Race condition recovery failed:', raceError)
+            // Continue with fresh result - don't fail the request
+          } else if (raced) {
             const racedMeta: ImpactAnalysisResult['meta'] = {
               timestamp: raced.created_at,
               status: ANALYSIS_STATUS.COMPLETE,
@@ -381,25 +406,26 @@ Return only valid JSON matching the ImpactAnalysisResult schema.`,
               change_description: raced.change_description,
               context: raced.context || null, // Always include context field
               _cache: CACHE_STATUS.RACE,
-              agent_type: raced.meta?.agent_type || AGENT_TYPE.SINGLE_AGENT
+              agent_type: raced.meta?.agent_type || AGENT_TYPE.SINGLE_AGENT,
             }
 
             // Only include RAG diagnostics if it was an agentic-rag strategy
             if (raced.meta?.agent_type === AGENT_TYPE.AGENTIC_RAG && raced.meta?.rag) {
               racedMeta.rag = {
                 match_count: raced.meta.rag.match_count,
-                average_similarity: raced.meta.rag.average_similarity
+                average_similarity: raced.meta.rag.average_similarity,
               }
             }
 
             const racedResult: ImpactAnalysisResult = {
               analysis_summary: raced.analysis_summary,
               risk_level: raced.risk_level as 'low' | 'medium' | 'high' | 'critical',
+              risk_rationale: raced.risk_rationale || 'Race condition recovered result',
               risk_factors: raced.risk_factors || [],
               risk_scoring: raced.risk_scoring as any,
               decision_trace: raced.decision_trace || [],
               sources: raced.sources || [],
-              meta: racedMeta
+              meta: racedMeta,
             }
             const response = NextResponse.json(racedResult)
             response.headers.set('X-ChangeSim-Cache', CACHE_STATUS.RACE)
@@ -431,7 +457,7 @@ Return only valid JSON matching the ImpactAnalysisResult schema.`,
                 context
               )
             })
-            .catch((embeddingError) => {
+            .catch(embeddingError => {
               console.error('[impact-analysis] Embedding process failed:', embeddingError)
               // Don't fail the main request for embedding issues
             })
@@ -485,22 +511,31 @@ Return only valid JSON matching the ImpactAnalysisResult schema.`,
       stack: (error as Error).stack,
     })
 
-    const errorMessage = (error as Error).message
+    const errorMessage = (error as Error).message.toLowerCase()
 
-    // Handle schema validation errors from AI response
-    if (errorMessage.includes('schema') || errorMessage.includes('validation') || errorMessage.includes('parse')) {
-      return NextResponse.json(
-        { error: 'AI response format validation failed. Please try again.' },
-        { status: 502 }
-      )
-    } else if (errorMessage.includes('429')) {
+    // Handle specific AI service errors first (most specific)
+    if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
       return NextResponse.json(
         {
           error: 'AI service rate limit exceeded. Please try again in a few moments.',
         },
         { status: 429 }
       )
-    } else if (errorMessage.includes('API')) {
+    } else if (
+      errorMessage.includes('schema') ||
+      errorMessage.includes('validation') ||
+      errorMessage.includes('parse') ||
+      errorMessage.includes('response format')
+    ) {
+      return NextResponse.json(
+        { error: 'AI response format validation failed. Please try again.' },
+        { status: 502 }
+      )
+    } else if (
+      errorMessage.includes('api service') ||
+      errorMessage.includes('temporarily unavailable') ||
+      errorMessage.includes('service unavailable')
+    ) {
       return NextResponse.json(
         { error: 'AI service temporarily unavailable. Please try again.' },
         { status: 502 }

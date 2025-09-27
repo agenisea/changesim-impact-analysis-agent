@@ -67,13 +67,20 @@ export function normalizeHumanImpact(humanImpact: SchemaHumanImpact): HumanImpac
  * Currently identical, but provides consistency and future-proofing
  */
 export function normalizeTimeSensitivity(timeSensitivity: SchemaTimeSensitivity): TimeSensitivity {
-  const validTimeSensitivities: TimeSensitivity[] = ['long_term', 'short_term', 'immediate', 'critical']
+  const validTimeSensitivities: TimeSensitivity[] = [
+    'long_term',
+    'short_term',
+    'immediate',
+    'critical',
+  ]
 
   if (validTimeSensitivities.includes(timeSensitivity as TimeSensitivity)) {
     return timeSensitivity as TimeSensitivity
   }
 
-  console.warn(`[normalize] Unknown time_sensitivity value: ${timeSensitivity}, falling back to 'long_term'`)
+  console.warn(
+    `[normalize] Unknown time_sensitivity value: ${timeSensitivity}, falling back to 'long_term'`
+  )
   return 'long_term'
 }
 
@@ -99,30 +106,34 @@ export function normalizeRiskScoring(riskScoring: {
  * Type guard to validate if a value is a valid evaluator scope
  */
 export function isValidScope(value: unknown): value is Scope {
-  return typeof value === 'string' &&
+  return (
+    typeof value === 'string' &&
     ['single', 'team', 'organization', 'national', 'global'].includes(value)
+  )
 }
 
 /**
  * Type guard to validate if a value is a valid evaluator severity
  */
 export function isValidSeverity(value: unknown): value is Severity {
-  return typeof value === 'string' &&
-    ['minor', 'moderate', 'major', 'catastrophic'].includes(value)
+  return typeof value === 'string' && ['minor', 'moderate', 'major', 'catastrophic'].includes(value)
 }
 
 /**
  * Type guard to validate if a value is a valid evaluator human impact
  */
 export function isValidHumanImpact(value: unknown): value is HumanImpact {
-  return typeof value === 'string' &&
-    ['none', 'limited', 'significant', 'mass_casualty'].includes(value)
+  return (
+    typeof value === 'string' && ['none', 'limited', 'significant', 'mass_casualty'].includes(value)
+  )
 }
 
 /**
  * Type guard to validate if a value is a valid evaluator time sensitivity
  */
 export function isValidTimeSensitivity(value: unknown): value is TimeSensitivity {
-  return typeof value === 'string' &&
+  return (
+    typeof value === 'string' &&
     ['long_term', 'short_term', 'immediate', 'critical'].includes(value)
+  )
 }

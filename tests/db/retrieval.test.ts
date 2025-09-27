@@ -24,8 +24,22 @@ describe('matchImpactChunks', () => {
   it('passes defaults and filters items without content', async () => {
     vi.mocked(sb.rpc).mockResolvedValueOnce({
       data: [
-        { chunk_id: 'a', run_id: '1', org_role: 'role', composite: 'context', content: 'foo', similarity: 0.83 },
-        { chunk_id: 'b', run_id: '2', org_role: 'role', composite: 'context', content: '', similarity: 0.6 },
+        {
+          chunk_id: 'a',
+          run_id: '1',
+          org_role: 'role',
+          composite: 'context',
+          content: 'foo',
+          similarity: 0.83,
+        },
+        {
+          chunk_id: 'b',
+          run_id: '2',
+          org_role: 'role',
+          composite: 'context',
+          content: '',
+          similarity: 0.6,
+        },
       ],
       error: null,
     } as any)

@@ -14,7 +14,10 @@ const MIN_DECISION_TRACE_LENGTH = 3
  * @param maxLength - Maximum allowed length (default: 5)
  * @returns Bounded decision trace array
  */
-export function boundDecisionTrace(trace: string[], maxLength: number = MAX_DECISION_TRACE_LENGTH): string[] {
+export function boundDecisionTrace(
+  trace: string[],
+  maxLength: number = MAX_DECISION_TRACE_LENGTH
+): string[] {
   if (trace.length <= maxLength) {
     return trace
   }
@@ -52,14 +55,14 @@ export function validateDecisionTrace(trace: string[]): { valid: boolean; error?
   if (trace.length < MIN_DECISION_TRACE_LENGTH) {
     return {
       valid: false,
-      error: `Decision trace must have at least ${MIN_DECISION_TRACE_LENGTH} items, got ${trace.length}`
+      error: `Decision trace must have at least ${MIN_DECISION_TRACE_LENGTH} items, got ${trace.length}`,
     }
   }
 
   if (trace.length > MAX_DECISION_TRACE_LENGTH) {
     return {
       valid: false,
-      error: `Decision trace must have at most ${MAX_DECISION_TRACE_LENGTH} items, got ${trace.length}`
+      error: `Decision trace must have at most ${MAX_DECISION_TRACE_LENGTH} items, got ${trace.length}`,
     }
   }
 

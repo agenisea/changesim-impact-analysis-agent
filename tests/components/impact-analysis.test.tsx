@@ -189,13 +189,7 @@ describe('AnalysisReportArtifact', () => {
       delete resultWithoutRole.meta.role
     }
 
-    render(
-      <AnalysisReportArtifact
-        data={resultWithoutRole}
-        riskFactors={[]}
-        showActions={false}
-      />
-    )
+    render(<AnalysisReportArtifact data={resultWithoutRole} riskFactors={[]} showActions={false} />)
 
     expect(screen.getByRole('status', { name: 'Risk level: High' })).toBeInTheDocument()
   })

@@ -69,21 +69,17 @@ export function isSameOriginRequest(request: NextRequest): boolean {
  */
 export function withAuth(handler: (request: NextRequest) => Promise<Response>) {
   return async (request: NextRequest) => {
-    try {
-      // Allow same-origin requests (internal frontend calls)
-      if (isSameOriginRequest(request)) {
-        return handler(request)
-      }
-
-      // Require API token for external requests
-      if (!validateApiToken(request)) {
-        return createUnauthorizedResponse()
-      }
-
+    // Allow same-origin requests (internal frontend calls)
+    if (isSameOriginRequest(request)) {
       return handler(request)
-    } catch (error) {
-      console.error('[auth] Error in withAuth middleware:', error)
-      return new Response('Internal Server Error', { status: 500 })
     }
+
+    // Require API token for external requests
+    if (!validateApiToken(request)) {
+      return createUnauthorizedResponse()
+    }
+
+    // Call the handler and let it handle its own errors
+    return handler(request)
   }
 }

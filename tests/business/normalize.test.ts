@@ -35,7 +35,9 @@ describe('Risk Scoring Enum Normalizer', () => {
     it('should handle unknown values with fallback', () => {
       // @ts-expect-error Testing invalid input
       expect(normalizeScope('invalid')).toBe('single')
-      expect(console.warn).toHaveBeenCalledWith('[normalize] Unknown scope value: invalid, falling back to \'single\'')
+      expect(console.warn).toHaveBeenCalledWith(
+        "[normalize] Unknown scope value: invalid, falling back to 'single'"
+      )
     })
   })
 
@@ -50,7 +52,9 @@ describe('Risk Scoring Enum Normalizer', () => {
     it('should handle unknown values with fallback', () => {
       // @ts-expect-error Testing invalid input
       expect(normalizeSeverity('invalid')).toBe('moderate')
-      expect(console.warn).toHaveBeenCalledWith('[normalize] Unknown severity value: invalid, falling back to \'moderate\'')
+      expect(console.warn).toHaveBeenCalledWith(
+        "[normalize] Unknown severity value: invalid, falling back to 'moderate'"
+      )
     })
   })
 
@@ -65,7 +69,9 @@ describe('Risk Scoring Enum Normalizer', () => {
     it('should handle unknown values with fallback', () => {
       // @ts-expect-error Testing invalid input
       expect(normalizeHumanImpact('invalid')).toBe('none')
-      expect(console.warn).toHaveBeenCalledWith('[normalize] Unknown human_impact value: invalid, falling back to \'none\'')
+      expect(console.warn).toHaveBeenCalledWith(
+        "[normalize] Unknown human_impact value: invalid, falling back to 'none'"
+      )
     })
   })
 
@@ -80,7 +86,9 @@ describe('Risk Scoring Enum Normalizer', () => {
     it('should handle unknown values with fallback', () => {
       // @ts-expect-error Testing invalid input
       expect(normalizeTimeSensitivity('invalid')).toBe('long_term')
-      expect(console.warn).toHaveBeenCalledWith('[normalize] Unknown time_sensitivity value: invalid, falling back to \'long_term\'')
+      expect(console.warn).toHaveBeenCalledWith(
+        "[normalize] Unknown time_sensitivity value: invalid, falling back to 'long_term'"
+      )
     })
   })
 

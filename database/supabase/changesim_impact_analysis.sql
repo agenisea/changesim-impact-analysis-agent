@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS public.changesim_impact_analysis_runs (
 
   analysis_summary text not null,
   risk_level text not null,
+  risk_rationale text not null,
   risk_factors jsonb not null,
   risk_scoring jsonb not null,
   decision_trace jsonb not null,
@@ -34,6 +35,9 @@ CREATE INDEX IF NOT EXISTS idx_changesim_impact_analysis_runs_created
 
 CREATE INDEX IF NOT EXISTS idx_changesim_impact_analysis_runs_risk_level
   ON changesim_impact_analysis_runs (risk_level);
+
+CREATE INDEX IF NOT EXISTS idx_changesim_impact_analysis_runs_risk_rationale
+  ON changesim_impact_analysis_runs USING gin (to_tsvector('english', risk_rationale));
 
 CREATE INDEX IF NOT EXISTS idx_changesim_impact_analysis_runs_scope
   ON changesim_impact_analysis_runs ((risk_scoring->>'scope'));

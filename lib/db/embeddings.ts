@@ -1,7 +1,11 @@
 import { type ImpactAnalysisResult } from '@/types/impact-analysis'
 import { sb } from '@/lib/db/client'
 import { retryFetch } from '@/lib/utils/fetch'
-import { EMBEDDING_CONFIG, COMPOSITE_CHUNK_TYPES, type CompositeChunkType } from '@/lib/utils/constants'
+import {
+  EMBEDDING_CONFIG,
+  COMPOSITE_CHUNK_TYPES,
+  type CompositeChunkType,
+} from '@/lib/utils/constants'
 
 const SHOW_DEBUG_LOGS = process.env.SHOW_DEBUG_LOGS === 'true'
 
@@ -31,17 +35,23 @@ export function createAnalysisChunks(
   runId: string,
   role: string,
   changeDescription: string,
-  context?: string
+  context?: unknown
 ): AnalysisChunk[] {
   const chunks: AnalysisChunk[] = []
   let chunkIndex = 0
+
+  // Normalize context to string for embedding
+  const contextString =
+    typeof context === 'string' ? context.trim() : context ? JSON.stringify(context) : ''
 
   // Composite Chunk 1: Role + Change Description + Context
   const roleChangeContextContent = [
     `Role: ${role}`,
     `Change Description: ${changeDescription}`,
-    context?.trim() ? `Context: ${context}` : null,
-  ].filter(Boolean).join('\n\n')
+    contextString ? `Context: ${contextString}` : null,
+  ]
+    .filter(Boolean)
+    .join('\n\n')
 
   chunks.push({
     run_id: runId,
@@ -52,11 +62,13 @@ export function createAnalysisChunks(
   })
 
   // Composite Chunk 2: Context + Analysis Summary
-  if (context?.trim() || result.analysis_summary?.trim()) {
+  if (contextString || result.analysis_summary?.trim()) {
     const contextAnalysisContent = [
-      context?.trim() ? `Context: ${context}` : null,
+      contextString ? `Context: ${contextString}` : null,
       result.analysis_summary?.trim() ? `Analysis Summary: ${result.analysis_summary}` : null,
-    ].filter(Boolean).join('\n\n')
+    ]
+      .filter(Boolean)
+      .join('\n\n')
 
     if (contextAnalysisContent) {
       chunks.push({
@@ -85,7 +97,63 @@ export function createAnalysisChunks(
     })
   }
 
-  // Composite Chunk 4: Sources
+  // Composite Chunk 4: Risk Assessment (comprehensive risk information)
+  if (result.risk_level && result.risk_rationale && result.risk_scoring) {
+    const riskAssessmentContent = [
+      `Risk Level: ${result.risk_level}`,
+      `Risk Rationale: ${result.risk_rationale}`,
+      `Risk Scoring:`,
+      `  • Scope: ${result.risk_scoring.scope}`,
+      `  • Severity: ${result.risk_scoring.severity}`,
+      `  • Human Impact: ${result.risk_scoring.human_impact}`,
+      `  • Time Sensitivity: ${result.risk_scoring.time_sensitivity}`
+    ].join('\n')
+
+    chunks.push({
+      run_id: runId,
+      org_role: role,
+      composite: COMPOSITE_CHUNK_TYPES.RISK_ASSESSMENT,
+      content: riskAssessmentContent,
+      chunk_idx: chunkIndex++,
+    })
+  }
+
+  // Composite Chunk 5: Decision Process (decision-making logic)
+  if (result.decision_trace?.length) {
+    const decisionProcessContent = [
+      `Change Description: ${changeDescription}`,
+      `Decision Process:`,
+      ...result.decision_trace.map((step, idx) => `${idx + 1}. ${step}`)
+    ].join('\n')
+
+    chunks.push({
+      run_id: runId,
+      org_role: role,
+      composite: COMPOSITE_CHUNK_TYPES.DECISION_PROCESS,
+      content: decisionProcessContent,
+      chunk_idx: chunkIndex++,
+    })
+  }
+
+  // Composite Chunk 6: Risk Context (risk rationale with contextual factors)
+  if (result.risk_level && result.risk_rationale) {
+    const riskContextContent = [
+      `Risk Level: ${result.risk_level}`,
+      `Risk Rationale: ${result.risk_rationale}`,
+      contextString ? `Context: ${contextString}` : null,
+      result.risk_factors?.length ? `Key Risk Factors:\n${result.risk_factors.map(risk => `• ${risk}`).join('\n')}` : null
+    ].filter(Boolean).join('\n\n')
+
+    chunks.push({
+      run_id: runId,
+      org_role: role,
+      composite: COMPOSITE_CHUNK_TYPES.RISK_CONTEXT,
+      content: riskContextContent,
+      chunk_idx: chunkIndex++,
+    })
+  }
+
+  // Composite Chunk 7: Sources
   if (result.sources?.length) {
     const sourcesContent = `Sources:\n${result.sources.map(source => `• ${source.title}: ${source.url}`).join('\n')}`
 
@@ -124,71 +192,77 @@ export async function insertAnalysisChunks(chunks: AnalysisChunk[]): Promise<voi
     return
   }
 
-  // Add detailed logging and timeout wrapper for debugging
-  console.log(`[embedding] About to insert chunks for run_id: ${chunks[0]?.run_id}`)
+  if (SHOW_DEBUG_LOGS) {
+    console.log(`[embedding] About to insert chunks for run_id: ${chunks[0]?.run_id}`)
+  }
 
   try {
     const insertStart = Date.now()
-    console.log(`[embedding] Starting database insert at ${new Date(insertStart).toISOString()}`)
+    if (SHOW_DEBUG_LOGS) {
+      console.log(`[embedding] Starting database insert at ${new Date(insertStart).toISOString()}`)
+    }
 
-    // Insert chunks one by one to handle duplicates gracefully
-    console.log(`[embedding] Inserting ${chunks.length} chunks individually to handle duplicates`)
+    // Batch insert chunks for efficiency using EMBEDDING_CONFIG.BATCH_SIZE
+    console.log(
+      `[embedding] Inserting ${chunks.length} chunks in batches of ${EMBEDDING_CONFIG.BATCH_SIZE}`
+    )
 
     let successCount = 0
-    for (const chunk of chunks) {
+    for (let i = 0; i < chunks.length; i += EMBEDDING_CONFIG.BATCH_SIZE) {
+      const batch = chunks.slice(i, i + EMBEDDING_CONFIG.BATCH_SIZE)
+
       try {
-        // Ensure we have all required fields for the insert
-        const insertData = {
+        // Prepare batch insert data
+        const batchData = batch.map(chunk => ({
           run_id: chunk.run_id,
           org_role: chunk.org_role,
           composite: chunk.composite,
           chunk_idx: chunk.chunk_idx,
-          content: chunk.content
-          // chunk_id will be auto-generated
-          // embedding will be null initially
-          // created_at will be auto-generated
+          content: chunk.content,
+        }))
+
+        if (SHOW_DEBUG_LOGS) {
+          console.log(
+            `[embedding] Inserting batch ${Math.floor(i / EMBEDDING_CONFIG.BATCH_SIZE) + 1}:`,
+            {
+              batch_size: batch.length,
+              run_id: batchData[0]?.run_id,
+              content_lengths: batchData.map(d => d.content?.length || 0),
+            }
+          )
         }
 
-        console.log(`[embedding] Inserting chunk data:`, {
-          run_id: insertData.run_id,
-          org_role: insertData.org_role,
-          composite: insertData.composite,
-          chunk_idx: insertData.chunk_idx,
-          content_length: insertData.content?.length || 0
-        })
-
-        // Use custom function to bypass Supabase client issues
-        console.log(`[embedding] Calling insert_analysis_chunk RPC function`)
-        const { data, error } = await sb.rpc('insert_analysis_chunk', {
-          p_run_id: insertData.run_id,
-          p_org_role: insertData.org_role,
-          p_composite: insertData.composite,
-          p_chunk_idx: insertData.chunk_idx,
-          p_content: insertData.content
-        })
-
-        console.log(`[embedding] RPC response:`, { data, error })
+        // Use direct table insert for batch efficiency
+        const { data, error } = await sb.from(CHUNKS_TABLE).insert(batchData).select('chunk_id')
 
         if (error) {
-          console.error(`[embedding] RPC call failed:`, error.message)
-        } else if (data && data.success) {
-          successCount++
-          console.log(`[embedding] Chunk inserted successfully: ${data.chunk_id}`)
-        } else if (data && !data.success) {
-          if (data.error_code === '23505') {
-            console.log(`[embedding] Chunk already exists: run_id=${chunk.run_id}, composite=${chunk.composite}, idx=${chunk.chunk_idx}`)
+          // Handle duplicate key errors gracefully
+          if (error.code === '23505') {
+            if (SHOW_DEBUG_LOGS) {
+              console.log(`[embedding] Some chunks already exist in batch, continuing`)
+            }
+            successCount += batch.length // Assume success for duplicates
           } else {
-            console.error(`[embedding] Failed to insert chunk:`, data.message)
+            console.error(`[embedding] Batch insert failed:`, error.message)
+            throw error
           }
         } else {
-          console.error(`[embedding] Unexpected response format:`, { data, error })
+          successCount += data?.length || batch.length
+          if (SHOW_DEBUG_LOGS) {
+            console.log(
+              `[embedding] Batch inserted successfully: ${data?.length || batch.length} chunks`
+            )
+          }
         }
-      } catch (insertError) {
-        console.error(`[embedding] Insert error for chunk:`, (insertError as Error).message)
+      } catch (batchError) {
+        console.error(`[embedding] Batch insert error:`, (batchError as Error).message)
+        // Continue with next batch rather than failing completely
       }
     }
 
-    console.log(`[embedding] Successfully inserted ${successCount}/${chunks.length} chunks`)
+    if (SHOW_DEBUG_LOGS) {
+      console.log(`[embedding] Successfully inserted ${successCount}/${chunks.length} chunks`)
+    }
 
     // If no chunks were inserted successfully, throw an error
     if (successCount === 0) {
@@ -196,10 +270,12 @@ export async function insertAnalysisChunks(chunks: AnalysisChunk[]): Promise<voi
     }
 
     const insertDuration = Date.now() - insertStart
-    console.log(`[embedding] Insert completed in ${insertDuration}ms`)
-
-    console.log(`[embedding] Successfully processed ${chunks.length} chunks for run: ${chunks[0]?.run_id}`)
-
+    if (SHOW_DEBUG_LOGS) {
+      console.log(`[embedding] Insert completed in ${insertDuration}ms`)
+      console.log(
+        `[embedding] Successfully processed ${chunks.length} chunks for run: ${chunks[0]?.run_id}`
+      )
+    }
   } catch (err) {
     const error = err as Error
     console.error('[embedding] Insert operation failed:', {
@@ -207,7 +283,7 @@ export async function insertAnalysisChunks(chunks: AnalysisChunk[]): Promise<voi
       error_name: error.name,
       run_id: chunks[0]?.run_id,
       chunk_count: chunks.length,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     })
     throw error
   }
@@ -236,13 +312,13 @@ export async function triggerEmbeddingProcessor(): Promise<{ processed: number }
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${serviceKey}`,
+          Authorization: `Bearer ${serviceKey}`,
           'Content-Type': 'application/json',
         },
       },
       {
         maxAttempts: EMBEDDING_CONFIG.MAX_RETRIES,
-        baseDelayMs: EMBEDDING_CONFIG.RETRY_DELAY_MS
+        baseDelayMs: EMBEDDING_CONFIG.RETRY_DELAY_MS,
       }
     )
 
@@ -275,7 +351,7 @@ export async function chunkAndEmbedAnalysis(
   runId: string,
   role: string,
   changeDescription: string,
-  context?: string
+  context?: unknown
 ): Promise<void> {
   try {
     if (SHOW_DEBUG_LOGS) {
@@ -304,7 +380,10 @@ export async function chunkAndEmbedAnalysis(
       console.log(`[embedding] Embedding process completed successfully for run: ${runId}`)
     }
   } catch (error) {
-    console.error(`[embedding] Embedding process failed for run ${runId}:`, (error as Error).message)
+    console.error(
+      `[embedding] Embedding process failed for run ${runId}:`,
+      (error as Error).message
+    )
     // Don't re-throw - let the main analysis succeed even if embeddings fail
     console.log(`[embedding] Continuing without embeddings for run: ${runId}`)
   }

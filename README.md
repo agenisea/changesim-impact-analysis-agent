@@ -48,6 +48,7 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
 - Decision trace and source links to explain model reasoning
 - Copy-to-clipboard artifact optimized for distributing the report
 - **Run logging and analytics** with session-based tracking and recent runs history
+- **Production-grade reliability** with comprehensive error handling, graceful fallbacks, and race condition recovery
 
 ---
 
@@ -64,7 +65,7 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
   - `lib/server/`: Server-only utilities (session management)
   - `lib/db/`: Database clients, vector retrieval, and queries
 - **Risk Logic**: Multi-layered evaluation system with enum normalization, decision trace bounds, and guardrails
-- **Testing**: Comprehensive test suite (113 tests) with domain-organized structure covering business logic, API integration, and UI components
+- **Testing**: Comprehensive test suite (133 tests) with domain-organized structure covering business logic, API integration, and UI components
 - **Code Quality**: ESLint + Prettier with strict TypeScript and kebab-case naming conventions
 - **Deployment**: Containerized with Docker (multi-stage builds), nginx reverse proxy, and deployed on Fly.io with auto-scaling
 - **Security**: Comprehensive security headers, non-root execution, and secure error handling
@@ -74,7 +75,7 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
 ## 🧠 Architecture Notes
 
 ### Core Components
-- **API Route** (`app/api/impact-analysis/route.ts`): Orchestrates agentic RAG vs single-agent decision flow, handles validation, applies risk mapping with normalization and bounds checking, includes session-based caching
+- **API Route** (`app/api/impact-analysis/route.ts`): Orchestrates agentic RAG vs single-agent decision flow, handles validation, applies risk mapping with normalization and bounds checking, includes session-based caching with robust error handling and graceful fallbacks
 - **Dynamic Prompting** (`lib/ai/dynamic-prompting.ts`): Role-specific prompt enhancement that combines role perspective with change context and RAG insights
 - **Agentic RAG** (`lib/ai/agentic-rag.ts`): Intelligent retrieval system that uses historical context when confidence is high, falls back to single-agent when not
 - **Vector Retrieval** (`lib/db/retrieval.ts`): Embedding-based similarity search for historical analysis patterns
@@ -141,7 +142,27 @@ Dimensions              Alignment                                   Bounds      
 4. **Guardrails & Bounds**: Organizational scope caps, single-person limits, and decision trace bounds (`decision-trace.ts`) prevent over-classification and prompt drift
 5. **Final Classification**: Produces a reliable risk level (Critical / High / Medium / Low)
    that leaders can use to anticipate impact and plan supportive actions.
-   
+
+### Reliability & Error Recovery
+
+ChangeSim is designed for production reliability with comprehensive error handling:
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│ Service Errors  │ ──▶│ Classification  │ ──▶│ Graceful        │ ──▶│ User Gets       │
+│ (AI, DB, Cache) │    │ & Specific      │    │ Fallbacks       │    │ Analysis        │
+│                 │    │ Status Codes    │    │                 │    │ Regardless      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+- **Intelligent Error Classification**: Distinguishes between rate limits (429), service unavailability (502), and schema validation errors with appropriate user messaging
+- **Graceful Database Failures**: Cache lookups and logging failures don't prevent analysis completion - user experience takes priority
+- **Race Condition Recovery**: Concurrent requests automatically detect and recover from database constraint violations
+- **Agentic RAG Fallbacks**: When vector retrieval fails or has insufficient context, automatically falls back to enhanced single-agent analysis
+- **Comprehensive Test Coverage**: 133 tests cover error scenarios, edge cases, and failure modes to ensure reliability in production
+
+The system prioritizes **delivering analysis results to users** even when supporting infrastructure experiences issues.
+
 ---
 
 ## 🔐 API Authentication
@@ -226,9 +247,9 @@ ChangeSim implements a dual-mode authentication system:
    ```bash
    pnpm lint              # Check code style with ESLint
    pnpm format            # Format code with Prettier
-   pnpm test              # Run comprehensive test suite including risk evaluation edge cases
+   pnpm test              # Run comprehensive test suite (133 tests) including error handling, race conditions, and business logic edge cases
    pnpm test:watch        # Run tests in watch mode during development
-   pnpm build             # Build for production
+   pnpm build             # Build for production with optimization
    ```
 
 ## 🚀 Deployment to Fly.io
@@ -301,9 +322,11 @@ The application implements multiple security layers:
 - **Container Security**: Multi-stage Docker builds with non-root user execution
 - **Process Isolation**: nginx runs as root for port 80 binding, Next.js as dedicated `nextjs` user
 - **API Authentication**: Token-based security with same-origin detection for frontend calls
-- **Error Handling**: Secure error responses that don't expose sensitive internal information
+- **Error Handling**: Intelligent error classification with specific status codes (429 for rate limits, 502 for service issues) and secure fallbacks that continue operation even when supporting systems fail
+- **Graceful Degradation**: Database and cache failures don't prevent analysis completion - the system prioritizes user experience over perfect logging
 - **Data Privacy**: No sensitive data logged or exposed in API responses
 - **Network Security**: Comprehensive security headers via nginx reverse proxy
+- **Race Condition Handling**: Robust concurrent request management with automatic recovery mechanisms
 
 ### Troubleshooting
 

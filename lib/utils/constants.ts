@@ -44,8 +44,8 @@ export const EMBEDDING_CONFIG = {
 export const RAG_CONFIG = {
   MATCH_COUNT: 4,
   MATCH_THRESHOLD: 0.72,
-  MIN_RESULTS: 2,
-  FALLBACK_SIMILARITY: 0.6
+  MIN_RESULTS: 1, // Allow single strong match to provide context
+  FALLBACK_SIMILARITY: 0.72, // Use same threshold as Supabase RPC to avoid redundant filtering
 } as const
 
 // Composite chunk types for semantic organization
@@ -53,6 +53,9 @@ export const COMPOSITE_CHUNK_TYPES = {
   ROLE_CHANGE_CONTEXT: 'role_change_context',
   CONTEXT_ANALYSIS: 'context_analysis',
   CHANGE_RISKS: 'change_risks',
+  RISK_ASSESSMENT: 'risk_assessment',
+  DECISION_PROCESS: 'decision_process',
+  RISK_CONTEXT: 'risk_context',
   SOURCES: 'sources'
 } as const
 

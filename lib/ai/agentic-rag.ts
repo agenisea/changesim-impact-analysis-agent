@@ -26,7 +26,10 @@ export interface AgenticRagParams<T> {
 }
 
 export type AgenticRagResult<T> =
-  | ({ strategy: typeof AGENT_TYPE.AGENTIC_RAG; diagnostics: AgenticRagDiagnostics } & GenerateObjectResult<T>)
+  | ({
+      strategy: typeof AGENT_TYPE.AGENTIC_RAG
+      diagnostics: AgenticRagDiagnostics
+    } & GenerateObjectResult<T>)
   | { strategy: typeof AGENT_TYPE.AGENTIC_RAG; error: Error }
   | { strategy: typeof AGENT_TYPE.AGENTIC_RAG; skipped: true; reason: 'insufficient-context' }
 
@@ -44,19 +47,16 @@ export async function invokeAgenticRag<T>({
   schema,
 }: AgenticRagParams<T>): Promise<AgenticRagResult<T>> {
   const agenticStart = Date.now()
-  const changePreview = changeDescription.substring(0, 100) + (changeDescription.length > 100 ? '...' : '')
 
-  console.log('[agentic-rag] Invoked agentic RAG pipeline', {
-    role,
-    change: changePreview,
-    hasContext: !!context,
-  })
+  console.log('[agentic-rag] Invoked agentic RAG pipeline')
   if (SHOW_DEBUG_LOGS) {
+    const changePreview =
+      changeDescription.substring(0, 100) + (changeDescription.length > 100 ? '...' : '')
     console.log('[agentic-rag] Starting agentic RAG analysis', {
       role,
       changeDescription: changePreview,
       hasContext: !!context,
-      agentType: AGENT_TYPE.AGENTIC_RAG
+      agentType: AGENT_TYPE.AGENTIC_RAG,
     })
   }
 
@@ -66,7 +66,7 @@ export async function invokeAgenticRag<T>({
     const matches = await matchImpactChunks({ embedding, role })
 
     const filtered = matches
-      .filter((match) => match.similarity >= RAG_CONFIG.FALLBACK_SIMILARITY)
+      .filter(match => match.similarity >= RAG_CONFIG.FALLBACK_SIMILARITY)
       .slice(0, RAG_CONFIG.MATCH_COUNT)
 
     if (SHOW_DEBUG_LOGS) {
@@ -113,12 +113,16 @@ You are analyzing an organizational change with enhanced context from both role 
 ${context ? `- **Additional Context**: ${typeof context === 'string' ? context : JSON.stringify(context)}` : ''}
 
 **Dynamic Analysis Instructions:**
-${promptEnhancement.ragInsights ? `
+${
+  promptEnhancement.ragInsights
+    ? `
 **Historical Insights Available:**
 ${promptEnhancement.ragInsights}
 
 Use these insights to inform your analysis, but don't be constrained by them. Focus on patterns and lessons learned.
-` : '**Note**: No historical data available - provide fresh analysis based on general expertise.'}
+`
+    : '**Note**: No historical data available - provide fresh analysis based on general expertise.'
+}
 
 **Role-Specific Guidance:**
 As a ${role}, your analysis should prioritize: ${promptEnhancement.focusAreas.join(', ')}
@@ -143,7 +147,7 @@ Respond with valid JSON that satisfies the schema.`
         temperature: TEMPERATURE,
         maxTokens: MAX_OUTPUT_TOKENS,
         enhancedSystemPrompt: true,
-        contextualUserPrompt: true
+        contextualUserPrompt: true,
       })
     }
 
@@ -162,10 +166,10 @@ Respond with valid JSON that satisfies the schema.`
       matchCount: filtered.length,
       averageSimilarity:
         filtered.reduce((sum, match) => sum + (match.similarity ?? 0), 0) / filtered.length,
-      retrievalIds: filtered.map((match) => match.chunk_id),
+      retrievalIds: filtered.map(match => match.chunk_id),
       roleContext: promptEnhancement.roleContext,
       focusAreas: promptEnhancement.focusAreas,
-      dynamicPromptUsed: true
+      dynamicPromptUsed: true,
     }
 
     const totalDuration = Date.now() - agenticStart
@@ -178,26 +182,24 @@ Respond with valid JSON that satisfies the schema.`
           matchCount: diagnostics.matchCount,
           averageSimilarity: diagnostics.averageSimilarity.toFixed(3),
           focusAreas: diagnostics.focusAreas,
-          dynamicPromptUsed: diagnostics.dynamicPromptUsed
+          dynamicPromptUsed: diagnostics.dynamicPromptUsed,
         },
-        tokenUsage: result.usage
+        tokenUsage: result.usage,
       })
     }
 
     return { strategy: AGENT_TYPE.AGENTIC_RAG, diagnostics, ...result }
   } catch (error) {
     const errorDuration = Date.now() - agenticStart
-    console.warn('[agentic-rag] Agentic RAG attempt failed, falling back to single-agent strategy', {
-      role,
-      durationMs: errorDuration,
-      reason: (error as Error).message,
-    })
-    console.error('[agentic-rag] Agentic RAG analysis failed after', errorDuration + 'ms:', {
-      error: (error as Error).message,
-      role,
-      agentType: AGENT_TYPE.AGENTIC_RAG,
-      fallbackStrategy: 'will use single-agent approach'
-    })
+    console.warn('[agentic-rag] Agentic RAG attempt failed, falling back to single-agent strategy')
+    if (SHOW_DEBUG_LOGS) {
+      console.error('[agentic-rag] Agentic RAG analysis failed after', errorDuration + 'ms:', {
+        error: (error as Error).message,
+        role,
+        agentType: AGENT_TYPE.AGENTIC_RAG,
+        fallbackStrategy: 'will use single-agent approach',
+      })
+    }
     return { strategy: AGENT_TYPE.AGENTIC_RAG, error: error as Error }
   }
 }
