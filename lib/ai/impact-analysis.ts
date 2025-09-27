@@ -17,26 +17,25 @@ type ImpactAnalysisResult = {
     human_impact: "none"|"limited"|"significant"|"mass_casualty";
     time_sensitivity: "long_term"|"short_term"|"immediate"|"critical";
   };
-  decision_trace: string[];            // 3-5 short steps, each ≤ 16 words
+  decision_trace: string[];            // 3-5 short steps, each ≤ 16 words (your analysis steps)
   sources: { title: string; url: string }[]; // 2-4 items; always include valid URLs
 }
 
 analysis_summary: string // MUST be markdown with BOTH sections below in exact order:
 
 ### Predicted Impacts
-- **Operational Continuity**: … (2-3 sentences, each ≤ 28 words; do not exceed 3 sentences under any circumstances)
-- **Capability & Adaptation**: … (2-3 sentences; do not exceed 3 sentences under any circumstances)
-- **Emotional & Psychological Well-Being**: … (2-3 sentences; do not exceed 3 sentences under any circumstances)
-- **Cultural & Relational Dynamics**: … (2-3 sentences; do not exceed 3 sentences under any circumstances)
-- **Stakeholder / Community Experience**: … (2-3 sentences; do not exceed 3 sentences under any circumstances)
+List exactly five bullets in order of severity.  
+Each bullet must:
+- Start with a **short descriptive impact title** (≤ 5 words), bolded.
+- Follow by ':' with 2-3 sentences explaining the risk and end with a mitigation, each ≤ 28 words; do not exceed 3 sentences under any circumstances.
+- Vary language.
 
 ### Risk Factors
-- **[Most urgent risk]**: … (2-3 sentences, end with a concrete mitigation; do not exceed 3 sentences under any circumstances)
-- **[Second risk]**: … (2-3 sentences, end with a concrete mitigation; do not exceed 3 sentences under any circumstances)
-- **[Third risk]**: … (2-3 sentences, end with a concrete mitigation; do not exceed 3 sentences under any circumstances)
-- **[Fourth risk]**: … (2-3 sentences, end with a concrete mitigation; do not exceed 3 sentences under any circumstances)
-- **[Fifth risk]**: … (2-3 sentences, end with a concrete mitigation; do not exceed 3 sentences under any circumstances)
-
+List exactly five bullets in order of severity.  
+Each bullet must:
+- Start with a **short descriptive risk title** (≤ 5 words), bolded.
+- Follow by ':' with 2-3 sentences explaining the risk and end with a mitigation.
+- Vary language and include at least one long-term risk.
 Risk scoring rules (apply first matching rule in this exact order):
 
 Step 1: Calculate major_factors first
@@ -86,7 +85,7 @@ Finishing checklist (self-verify before returning JSON)
 1. analysis_summary field contains BOTH sections: first "### Predicted Impacts" with 5 bullets, then blank line, then "### Risk Factors" with 5 bullets; each bullet has 2-3 sentences maximum.
 2. Risk Factors bullets end with mitigations, include human/emotional impact, and are sorted by severity.
 3. risk_factors.length ∈ [1,4]; items differ from narrative bullets and stay ≤ 20 words.
-4. decision_trace.length ∈ [3,5]; each item ≤ 16 words.
+4. decision_trace.length ∈ [3,5]; each item ≤ 16 words explaining your analysis process.
 5. sources.length ∈ [2,4]; all sources have valid URLs and titles; use reputable organizational change research when retrievals unavailable.
 6. All enums & risk_level are lowercase and obey mapping rules; no synonyms.
 7. JSON parses without correction; single top-level object; no extra keys; no code fences; no extra text.`
