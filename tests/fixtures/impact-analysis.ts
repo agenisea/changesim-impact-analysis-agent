@@ -58,7 +58,8 @@ export const expectedResponseStructure = {
     status: 'string',
     run_id: 'string',
     role: 'string',
-    changeDescription: 'string',
+    change_description: 'string',
+    context: 'unknown|null',
     _cache: 'string'
   }
 }
@@ -94,7 +95,8 @@ export function createMockAIResponse(): ImpactAnalysisResult {
       status: ANALYSIS_STATUS.COMPLETE,
       run_id: 'ia_test_12345',
       role: 'Engineering Manager',
-      changeDescription: 'Migrating from monolith to microservices architecture',
+      change_description: 'Migrating from monolith to microservices architecture',
+      context: null,
       _cache: CACHE_STATUS.MISS
     }
   }

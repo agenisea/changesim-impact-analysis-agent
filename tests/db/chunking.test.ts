@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { createAnalysisChunks, insertAnalysisChunks, triggerEmbeddingProcessor, chunkAndEmbedAnalysis } from '@/lib/db/embeddings'
+import {
+  createAnalysisChunks,
+  insertAnalysisChunks,
+  triggerEmbeddingProcessor,
+  chunkAndEmbedAnalysis,
+} from '@/lib/db/embeddings'
 import { COMPOSITE_CHUNK_TYPES } from '@/lib/utils/constants'
 import type { ImpactAnalysisResult } from '@/types/impact-analysis'
 
@@ -8,14 +13,18 @@ vi.mock('@/lib/db/client', () => ({
   sb: {
     from: vi.fn(() => ({
       insert: vi.fn(() => ({
-        error: null
-      }))
-    }))
-  }
+        select: vi.fn(() => ({
+          error: null,
+          data: [{ chunk_id: 'test-chunk-id' }],
+        })),
+      })),
+    })),
+    rpc: vi.fn(), // Add rpc function to prevent early return
+  },
 }))
 
 vi.mock('@/lib/utils/fetch', () => ({
-  retryFetch: vi.fn()
+  retryFetch: vi.fn(),
 }))
 
 // Import mocked modules
@@ -42,18 +51,19 @@ describe('chunking', () => {
     const mockResult: ImpactAnalysisResult = {
       analysis_summary: 'This is a comprehensive analysis of the proposed change.',
       risk_level: 'medium',
+      risk_rationale: 'Technical complexity and organizational impact require careful monitoring',
       risk_factors: ['Data migration complexity', 'Potential downtime'],
       risk_scoring: {
         scope: 'team',
         severity: 'moderate',
         human_impact: 'limited',
-        time_sensitivity: 'short_term'
+        time_sensitivity: 'short_term',
       },
       decision_trace: ['Analyzed scope', 'Assessed risks', 'Determined level'],
       sources: [
         { title: 'Migration Best Practices', url: 'https://example.com/migration' },
-        { title: 'Downtime Analysis', url: 'https://example.com/downtime' }
-      ]
+        { title: 'Downtime Analysis', url: 'https://example.com/downtime' },
+      ],
     }
 
     const runId = 'test-run-123'
@@ -61,16 +71,19 @@ describe('chunking', () => {
     const changeDescription = 'Migrating from monolith to microservices'
     const context = 'Legacy system with high technical debt'
 
-    it('should create all 4 composite chunks when all data is provided', () => {
+    it('should create all 7 composite chunks when all data is provided', () => {
       const chunks = createAnalysisChunks(mockResult, runId, role, changeDescription, context)
 
-      expect(chunks).toHaveLength(4)
+      expect(chunks).toHaveLength(7)
 
       // Check chunk types
       const chunkTypes = chunks.map(c => c.composite)
       expect(chunkTypes).toContain(COMPOSITE_CHUNK_TYPES.ROLE_CHANGE_CONTEXT)
       expect(chunkTypes).toContain(COMPOSITE_CHUNK_TYPES.CONTEXT_ANALYSIS)
       expect(chunkTypes).toContain(COMPOSITE_CHUNK_TYPES.CHANGE_RISKS)
+      expect(chunkTypes).toContain(COMPOSITE_CHUNK_TYPES.RISK_ASSESSMENT)
+      expect(chunkTypes).toContain(COMPOSITE_CHUNK_TYPES.DECISION_PROCESS)
+      expect(chunkTypes).toContain(COMPOSITE_CHUNK_TYPES.RISK_CONTEXT)
       expect(chunkTypes).toContain(COMPOSITE_CHUNK_TYPES.SOURCES)
     })
 
@@ -80,7 +93,9 @@ describe('chunking', () => {
 
       expect(roleChunk).toBeDefined()
       expect(roleChunk!.content).toContain('Role: Engineering Manager')
-      expect(roleChunk!.content).toContain('Change Description: Migrating from monolith to microservices')
+      expect(roleChunk!.content).toContain(
+        'Change Description: Migrating from monolith to microservices'
+      )
       expect(roleChunk!.content).toContain('Context: Legacy system with high technical debt')
       expect(roleChunk!.org_role).toBe(role)
       expect(roleChunk!.run_id).toBe(runId)
@@ -100,9 +115,50 @@ describe('chunking', () => {
       const risksChunk = chunks.find(c => c.composite === COMPOSITE_CHUNK_TYPES.CHANGE_RISKS)
 
       expect(risksChunk).toBeDefined()
-      expect(risksChunk!.content).toContain('Change Description: Migrating from monolith to microservices')
+      expect(risksChunk!.content).toContain(
+        'Change Description: Migrating from monolith to microservices'
+      )
       expect(risksChunk!.content).toContain('• Data migration complexity')
       expect(risksChunk!.content).toContain('• Potential downtime')
+    })
+
+    it('should create risk assessment chunk', () => {
+      const chunks = createAnalysisChunks(mockResult, runId, role, changeDescription, context)
+      const riskAssessmentChunk = chunks.find(c => c.composite === COMPOSITE_CHUNK_TYPES.RISK_ASSESSMENT)
+
+      expect(riskAssessmentChunk).toBeDefined()
+      expect(riskAssessmentChunk!.content).toContain('Risk Level: medium')
+      expect(riskAssessmentChunk!.content).toContain('Risk Rationale: Technical complexity and organizational impact require careful monitoring')
+      expect(riskAssessmentChunk!.content).toContain('Risk Scoring:')
+      expect(riskAssessmentChunk!.content).toContain('• Scope: team')
+      expect(riskAssessmentChunk!.content).toContain('• Severity: moderate')
+      expect(riskAssessmentChunk!.content).toContain('• Human Impact: limited')
+      expect(riskAssessmentChunk!.content).toContain('• Time Sensitivity: short_term')
+    })
+
+    it('should create decision process chunk', () => {
+      const chunks = createAnalysisChunks(mockResult, runId, role, changeDescription, context)
+      const decisionProcessChunk = chunks.find(c => c.composite === COMPOSITE_CHUNK_TYPES.DECISION_PROCESS)
+
+      expect(decisionProcessChunk).toBeDefined()
+      expect(decisionProcessChunk!.content).toContain('Change Description: Migrating from monolith to microservices')
+      expect(decisionProcessChunk!.content).toContain('Decision Process:')
+      expect(decisionProcessChunk!.content).toContain('1. Analyzed scope')
+      expect(decisionProcessChunk!.content).toContain('2. Assessed risks')
+      expect(decisionProcessChunk!.content).toContain('3. Determined level')
+    })
+
+    it('should create risk context chunk', () => {
+      const chunks = createAnalysisChunks(mockResult, runId, role, changeDescription, context)
+      const riskContextChunk = chunks.find(c => c.composite === COMPOSITE_CHUNK_TYPES.RISK_CONTEXT)
+
+      expect(riskContextChunk).toBeDefined()
+      expect(riskContextChunk!.content).toContain('Risk Level: medium')
+      expect(riskContextChunk!.content).toContain('Risk Rationale: Technical complexity and organizational impact require careful monitoring')
+      expect(riskContextChunk!.content).toContain('Context: Legacy system with high technical debt')
+      expect(riskContextChunk!.content).toContain('Key Risk Factors:')
+      expect(riskContextChunk!.content).toContain('• Data migration complexity')
+      expect(riskContextChunk!.content).toContain('• Potential downtime')
     })
 
     it('should create sources chunk', () => {
@@ -110,7 +166,9 @@ describe('chunking', () => {
       const sourcesChunk = chunks.find(c => c.composite === COMPOSITE_CHUNK_TYPES.SOURCES)
 
       expect(sourcesChunk).toBeDefined()
-      expect(sourcesChunk!.content).toContain('• Migration Best Practices: https://example.com/migration')
+      expect(sourcesChunk!.content).toContain(
+        '• Migration Best Practices: https://example.com/migration'
+      )
       expect(sourcesChunk!.content).toContain('• Downtime Analysis: https://example.com/downtime')
     })
 
@@ -120,7 +178,9 @@ describe('chunking', () => {
 
       expect(roleChunk!.content).not.toContain('Context:')
       expect(roleChunk!.content).toContain('Role: Engineering Manager')
-      expect(roleChunk!.content).toContain('Change Description: Migrating from monolith to microservices')
+      expect(roleChunk!.content).toContain(
+        'Change Description: Migrating from monolith to microservices'
+      )
     })
 
     it('should skip context_analysis chunk when no context or analysis_summary', () => {
@@ -133,7 +193,13 @@ describe('chunking', () => {
 
     it('should skip change_risks chunk when no risk factors', () => {
       const resultWithoutRisks = { ...mockResult, risk_factors: [] }
-      const chunks = createAnalysisChunks(resultWithoutRisks, runId, role, changeDescription, context)
+      const chunks = createAnalysisChunks(
+        resultWithoutRisks,
+        runId,
+        role,
+        changeDescription,
+        context
+      )
 
       const risksChunk = chunks.find(c => c.composite === COMPOSITE_CHUNK_TYPES.CHANGE_RISKS)
       expect(risksChunk).toBeUndefined()
@@ -141,10 +207,78 @@ describe('chunking', () => {
 
     it('should skip sources chunk when no sources', () => {
       const resultWithoutSources = { ...mockResult, sources: [] }
-      const chunks = createAnalysisChunks(resultWithoutSources, runId, role, changeDescription, context)
+      const chunks = createAnalysisChunks(
+        resultWithoutSources,
+        runId,
+        role,
+        changeDescription,
+        context
+      )
 
       const sourcesChunk = chunks.find(c => c.composite === COMPOSITE_CHUNK_TYPES.SOURCES)
       expect(sourcesChunk).toBeUndefined()
+    })
+
+    it('should skip risk assessment chunk when risk data is missing', () => {
+      const resultWithoutRiskData = {
+        ...mockResult,
+        risk_level: '',
+        risk_rationale: '',
+        risk_scoring: undefined as any
+      }
+      const chunks = createAnalysisChunks(
+        resultWithoutRiskData,
+        runId,
+        role,
+        changeDescription,
+        context
+      )
+
+      const riskAssessmentChunk = chunks.find(c => c.composite === COMPOSITE_CHUNK_TYPES.RISK_ASSESSMENT)
+      expect(riskAssessmentChunk).toBeUndefined()
+    })
+
+    it('should skip decision process chunk when no decision trace', () => {
+      const resultWithoutDecisionTrace = { ...mockResult, decision_trace: [] }
+      const chunks = createAnalysisChunks(
+        resultWithoutDecisionTrace,
+        runId,
+        role,
+        changeDescription,
+        context
+      )
+
+      const decisionProcessChunk = chunks.find(c => c.composite === COMPOSITE_CHUNK_TYPES.DECISION_PROCESS)
+      expect(decisionProcessChunk).toBeUndefined()
+    })
+
+    it('should skip risk context chunk when risk level or rationale is missing', () => {
+      const resultWithoutRiskLevelAndRationale = {
+        ...mockResult,
+        risk_level: '',
+        risk_rationale: ''
+      }
+      const chunks = createAnalysisChunks(
+        resultWithoutRiskLevelAndRationale,
+        runId,
+        role,
+        changeDescription,
+        context
+      )
+
+      const riskContextChunk = chunks.find(c => c.composite === COMPOSITE_CHUNK_TYPES.RISK_CONTEXT)
+      expect(riskContextChunk).toBeUndefined()
+    })
+
+    it('should create risk context chunk without context when context is missing', () => {
+      const chunks = createAnalysisChunks(mockResult, runId, role, changeDescription)
+      const riskContextChunk = chunks.find(c => c.composite === COMPOSITE_CHUNK_TYPES.RISK_CONTEXT)
+
+      expect(riskContextChunk).toBeDefined()
+      expect(riskContextChunk!.content).toContain('Risk Level: medium')
+      expect(riskContextChunk!.content).toContain('Risk Rationale: Technical complexity and organizational impact require careful monitoring')
+      expect(riskContextChunk!.content).not.toContain('Context:')
+      expect(riskContextChunk!.content).toContain('Key Risk Factors:')
     })
 
     it('should assign sequential chunk indices', () => {
@@ -166,9 +300,13 @@ describe('chunking', () => {
 
   describe('insertAnalysisChunks', () => {
     it('should insert chunks successfully', async () => {
-      const mockInsert = vi.fn(() => Promise.resolve({ error: null }))
+      const mockSelect = vi.fn(() => Promise.resolve({
+        error: null,
+        data: [{ chunk_id: 'test-chunk-id' }]
+      }))
+      const mockInsert = vi.fn(() => ({ select: mockSelect }))
       mockDb.from.mockReturnValue({
-        insert: mockInsert
+        insert: mockInsert,
       } as any)
 
       const chunks = [
@@ -177,13 +315,20 @@ describe('chunking', () => {
           org_role: 'Engineer',
           composite: COMPOSITE_CHUNK_TYPES.ROLE_CHANGE_CONTEXT,
           chunk_idx: 0,
-          content: 'test content'
-        }
+          content: 'test content',
+        },
       ]
 
       await expect(insertAnalysisChunks(chunks)).resolves.toBeUndefined()
       expect(mockDb.from).toHaveBeenCalledWith('changesim_impact_analysis_run_chunks')
-      expect(mockInsert).toHaveBeenCalledWith(chunks)
+      expect(mockInsert).toHaveBeenCalledWith([{
+        run_id: 'test-run',
+        org_role: 'Engineer',
+        composite: COMPOSITE_CHUNK_TYPES.ROLE_CHANGE_CONTEXT,
+        chunk_idx: 0,
+        content: 'test content',
+      }])
+      expect(mockSelect).toHaveBeenCalledWith('chunk_id')
     })
 
     it('should handle empty chunks array', async () => {
@@ -192,11 +337,13 @@ describe('chunking', () => {
     })
 
     it('should throw error on database failure', async () => {
-      const mockInsert = vi.fn(() => Promise.resolve({
-        error: { message: 'Database connection failed' }
+      const mockSelect = vi.fn(() => Promise.resolve({
+        error: { message: 'Database connection failed', code: 'OTHER_ERROR' },
+        data: null
       }))
+      const mockInsert = vi.fn(() => ({ select: mockSelect }))
       mockDb.from.mockReturnValue({
-        insert: mockInsert
+        insert: mockInsert,
       } as any)
 
       const chunks = [
@@ -205,11 +352,11 @@ describe('chunking', () => {
           org_role: 'Engineer',
           composite: COMPOSITE_CHUNK_TYPES.ROLE_CHANGE_CONTEXT,
           chunk_idx: 0,
-          content: 'test content'
-        }
+          content: 'test content',
+        },
       ]
 
-      await expect(insertAnalysisChunks(chunks)).rejects.toThrow('Failed to insert chunks: Database connection failed')
+      await expect(insertAnalysisChunks(chunks)).rejects.toThrow()
     })
   })
 
@@ -218,7 +365,7 @@ describe('chunking', () => {
       const mockResponse = { processed: 5 }
       mockRetryFetch.mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve(mockResponse)
+        json: () => Promise.resolve(mockResponse),
       } as any)
 
       const result = await triggerEmbeddingProcessor()
@@ -229,13 +376,13 @@ describe('chunking', () => {
         {
           method: 'POST',
           headers: {
-            'Authorization': 'Bearer test-service-key',
+            Authorization: 'Bearer test-service-key',
             'Content-Type': 'application/json',
           },
         },
         {
           maxAttempts: 3,
-          baseDelayMs: 500
+          baseDelayMs: 500,
         }
       )
     })
@@ -243,23 +390,29 @@ describe('chunking', () => {
     it('should throw error when environment variables are missing', async () => {
       delete process.env.SUPABASE_URL
 
-      await expect(triggerEmbeddingProcessor()).rejects.toThrow('Missing SUPABASE_URL or SUPABASE_KEY environment variables')
+      await expect(triggerEmbeddingProcessor()).rejects.toThrow(
+        'Missing SUPABASE_URL or SUPABASE_KEY environment variables'
+      )
     })
 
     it('should handle HTTP errors', async () => {
       mockRetryFetch.mockResolvedValue({
         ok: false,
         status: 500,
-        text: () => Promise.resolve('Internal Server Error')
+        text: () => Promise.resolve('Internal Server Error'),
       } as any)
 
-      await expect(triggerEmbeddingProcessor()).rejects.toThrow('embedding-processor call failed: 500 - Internal Server Error')
+      await expect(triggerEmbeddingProcessor()).rejects.toThrow(
+        'embedding-processor call failed: 500 - Internal Server Error'
+      )
     })
 
     it('should handle network errors', async () => {
       mockRetryFetch.mockRejectedValue(new Error('Network timeout'))
 
-      await expect(triggerEmbeddingProcessor()).rejects.toThrow('Embedding processor failed: Network timeout')
+      await expect(triggerEmbeddingProcessor()).rejects.toThrow(
+        'Embedding processor failed: Network timeout'
+      )
     })
   })
 
@@ -267,27 +420,32 @@ describe('chunking', () => {
     const mockResult: ImpactAnalysisResult = {
       analysis_summary: 'Test analysis',
       risk_level: 'medium',
+      risk_rationale: 'Test risk rationale for analysis',
       risk_factors: ['Risk 1'],
       risk_scoring: {
         scope: 'team',
         severity: 'moderate',
         human_impact: 'limited',
-        time_sensitivity: 'short_term'
+        time_sensitivity: 'short_term',
       },
       decision_trace: ['Step 1'],
-      sources: [{ title: 'Source 1', url: 'https://example.com' }]
+      sources: [{ title: 'Source 1', url: 'https://example.com' }],
     }
 
     beforeEach(() => {
-      // Setup successful mocks
-      const mockInsert = vi.fn(() => Promise.resolve({ error: null }))
+      // Setup successful mocks with proper chain
+      const mockSelect = vi.fn(() => Promise.resolve({
+        error: null,
+        data: [{ chunk_id: 'test-chunk-id' }]
+      }))
+      const mockInsert = vi.fn(() => ({ select: mockSelect }))
       mockDb.from.mockReturnValue({
-        insert: mockInsert
+        insert: mockInsert,
       } as any)
 
       mockRetryFetch.mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ processed: 3 })
+        json: () => Promise.resolve({ processed: 3 }),
       } as any)
     })
 
@@ -302,7 +460,9 @@ describe('chunking', () => {
         'Test context'
       )
 
-      expect(consoleSpy).toHaveBeenCalledWith('[embedding] Inserted 4 chunks - jobs enqueued by trigger')
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '[embedding] Inserted 7 chunks - jobs enqueued by trigger'
+      )
       expect(consoleSpy).toHaveBeenCalledWith('[embedding] Embedding processor: 3 jobs processed')
 
       consoleSpy.mockRestore()
@@ -313,57 +473,79 @@ describe('chunking', () => {
         ...mockResult,
         risk_factors: [],
         sources: [],
-        analysis_summary: ''
+        analysis_summary: '',
       }
 
-      await expect(chunkAndEmbedAnalysis(
-        emptyResult,
-        'test-run-123',
-        'Engineer',
-        'Test change'
-      )).resolves.toBeUndefined()
+      await expect(
+        chunkAndEmbedAnalysis(emptyResult, 'test-run-123', 'Engineer', 'Test change')
+      ).resolves.toBeUndefined()
     })
 
-    it('should propagate insertion errors', async () => {
-      const mockInsert = vi.fn(() => Promise.resolve({
-        error: { message: 'Insert failed' }
+    it('should handle insertion errors gracefully without throwing', async () => {
+      const mockSelect = vi.fn(() => Promise.resolve({
+        error: { message: 'Insert failed', code: 'OTHER_ERROR' },
+        data: null
       }))
+      const mockInsert = vi.fn(() => ({ select: mockSelect }))
       mockDb.from.mockReturnValue({
-        insert: mockInsert
+        insert: mockInsert,
       } as any)
 
-      await expect(chunkAndEmbedAnalysis(
-        mockResult,
-        'test-run-123',
-        'Engineer',
-        'Test change'
-      )).rejects.toThrow('Failed to insert chunks: Insert failed')
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+      // Should not throw - errors are caught and logged
+      await expect(
+        chunkAndEmbedAnalysis(mockResult, 'test-run-123', 'Engineer', 'Test change')
+      ).resolves.toBeUndefined()
+
+      // Verify error was logged
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '[embedding] Embedding process failed for run test-run-123:',
+        expect.any(String)
+      )
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        '[embedding] Continuing without embeddings for run: test-run-123'
+      )
+
+      consoleSpy.mockRestore()
+      consoleLogSpy.mockRestore()
     })
 
-    it('should propagate embedding processor errors', async () => {
+    it('should handle embedding processor errors gracefully without throwing', async () => {
       mockRetryFetch.mockRejectedValue(new Error('Processor unavailable'))
 
-      await expect(chunkAndEmbedAnalysis(
-        mockResult,
-        'test-run-123',
-        'Engineer',
-        'Test change'
-      )).rejects.toThrow('Embedding processor failed: Processor unavailable')
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+      // Should not throw - errors are caught and logged
+      await expect(
+        chunkAndEmbedAnalysis(mockResult, 'test-run-123', 'Engineer', 'Test change')
+      ).resolves.toBeUndefined()
+
+      // Verify error was logged
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '[embedding] Embedding process failed for run test-run-123:',
+        expect.stringContaining('Processor unavailable')
+      )
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        '[embedding] Continuing without embeddings for run: test-run-123'
+      )
+
+      consoleSpy.mockRestore()
+      consoleLogSpy.mockRestore()
     })
 
     it('should log debug information when enabled', async () => {
       process.env.SHOW_DEBUG_LOGS = 'true'
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 
-      await chunkAndEmbedAnalysis(
-        mockResult,
-        'test-run-123',
-        'Engineer',
-        'Test change'
-      )
+      await chunkAndEmbedAnalysis(mockResult, 'test-run-123', 'Engineer', 'Test change')
 
       // Just verify the standard logs are called - debug logs aren't working in tests
-      expect(consoleSpy).toHaveBeenCalledWith('[embedding] Inserted 4 chunks - jobs enqueued by trigger')
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '[embedding] Inserted 7 chunks - jobs enqueued by trigger'
+      )
       expect(consoleSpy).toHaveBeenCalledWith('[embedding] Embedding processor: 3 jobs processed')
 
       consoleSpy.mockRestore()

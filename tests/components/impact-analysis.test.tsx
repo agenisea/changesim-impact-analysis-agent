@@ -30,7 +30,8 @@ const baseResult: ImpactAnalysisResult = {
     timestamp: '2024-01-15T12:00:00.000Z',
     status: ANALYSIS_STATUS.COMPLETE,
     role: 'Support Team',
-    changeDescription: 'Migrate to new CRM platform',
+    change_description: 'Migrate to new CRM platform',
+    context: null,
   },
 }
 
@@ -188,13 +189,7 @@ describe('AnalysisReportArtifact', () => {
       delete resultWithoutRole.meta.role
     }
 
-    render(
-      <AnalysisReportArtifact
-        data={resultWithoutRole}
-        riskFactors={[]}
-        showActions={false}
-      />
-    )
+    render(<AnalysisReportArtifact data={resultWithoutRole} riskFactors={[]} showActions={false} />)
 
     expect(screen.getByRole('status', { name: 'Risk level: High' })).toBeInTheDocument()
   })

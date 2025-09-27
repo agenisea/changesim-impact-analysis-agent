@@ -10,7 +10,7 @@ type ImpactAnalysisResult = {
   analysis_summary: string;            // Markdown, template below. See length caps.
   risk_level: "low" | "medium" | "high" | "critical";
   risk_rationale: string;              // REQUIRED, ≤ 60 words
-  risk_factors: string[];              // 1-4 concise items (≠ narrative bullets), each ≤ 20 words
+  risk_factors: string[];              // 1-4 HIGH-LEVEL categories (different from narrative bullets), each ≤ 20 words
   risk_scoring: {
     scope: "individual"|"team"|"organization"|"national"|"global";
     severity: "minor"|"moderate"|"major"|"catastrophic";
@@ -31,11 +31,20 @@ Each bullet must:
 - Vary language.
 
 ### Risk Factors
-List exactly five bullets in order of severity.  
+List exactly five bullets in order of severity.
 Each bullet must:
 - Start with a **short descriptive risk title** (≤ 5 words), bolded.
 - Follow by ':' with 2-3 sentences explaining the risk and end with a mitigation.
 - Vary language and include at least one long-term risk.
+
+CRITICAL: The risk_factors array field MUST contain exactly 1-4 HIGH-LEVEL risk categories that summarize the detailed Risk Factors bullets above. NEVER exceed 4 items in this array. These should be broader themes, not copies of the bullet titles.
+
+Example distinction:
+- Risk Factors narrative bullets: "Training Challenges:", "Change Resistance:", "Productivity Impact:", "Cultural Barriers:", "Resource Constraints:" (5 detailed bullets)
+- risk_factors array: ["Implementation challenges", "Workforce adaptation issues", "Operational disruption", "Cultural transformation required"] (4 broad categories MAX)
+
+SCHEMA CONSTRAINT: risk_factors array cannot have more than 4 items or the response will be rejected.
+
 Risk scoring rules (apply first matching rule in this exact order):
 
 Step 1: Calculate major_factors first
@@ -84,7 +93,7 @@ Length budgets (hard caps; keep output compact)
 Finishing checklist (self-verify before returning JSON)
 1. analysis_summary field contains BOTH sections: first "### Predicted Impacts" with 5 bullets, then blank line, then "### Risk Factors" with 5 bullets; each bullet has 2-3 sentences maximum.
 2. Risk Factors bullets end with mitigations, include human/emotional impact, and are sorted by severity.
-3. risk_factors.length ∈ [1,4]; items differ from narrative bullets and stay ≤ 20 words.
+3. risk_factors.length ∈ [1,4]; items are HIGH-LEVEL categories that differ from narrative Risk Factors bullets and stay ≤ 20 words.
 4. decision_trace.length ∈ [3,5]; each item ≤ 16 words explaining your analysis process.
 5. sources.length ∈ [2,4]; all sources have valid URLs and titles; use reputable organizational change research when retrievals unavailable.
 6. All enums & risk_level are lowercase and obey mapping rules; no synonyms.

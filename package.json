@@ -1,6 +1,7 @@
 {
   "name": "changesim-impact-analysis-agent",
   "version": "0.1.1",
+  "type": "module",
   "private": true,
   "scripts": {
     "build": "next build",

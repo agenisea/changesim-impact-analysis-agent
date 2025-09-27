@@ -37,3 +37,6 @@ next-env.d.ts
 
 # local md files
 typescript-cheat-sheet.md
+
+# ignore old sql files
+*old.sql

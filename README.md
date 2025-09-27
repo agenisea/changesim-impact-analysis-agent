@@ -29,17 +29,26 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
 ## 🛠️ How It Works
 
 1. Enter a **role/team** and a **proposed change** in the sidebar form
-2. The agent calls an OpenAI model through the [AI SDK](https://ai-sdk.dev/) using a strict Zod schema
-3. The response is validated, risk-scored, and rendered as an interactive report artifact
-   - Example: _“Sales team will need retraining on the new CRM, expect short-term productivity dips, schedule hands-on workshops to smooth adoption.”_
+2. The system creates **dynamic, context-aware prompts** that combine role-specific perspective with the particular change scenario
+3. **Agentic RAG orchestration** embeds the request and retrieves 2-4 relevant historical analyses from Supabase vectors
+4. When retrieval is confident, the enhanced prompt integrates historical insights with role-specific analysis; otherwise, it uses the role-focused single-agent approach
+5. The agent analyzes both **direct impacts** and **ripple effects** across the organization from the role's unique perspective
+6. The response is validated, risk-scored, and rendered as an interactive report artifact
+   - Example: _"As a Sales Manager, this CRM change will require your team retraining (direct impact) and may affect your relationship with IT support during rollout (ripple effect). Schedule hands-on workshops and coordinate with IT for dedicated support hours."_
 
 ### Key Features
 
+- **Dynamic Prompting System** with role-specific analysis that adapts to both the role and the specific change
+- **Agentic RAG Integration** that intelligently combines historical insights with current context
+- **Ripple Effects Analysis** that considers both direct impacts and cascading organizational effects
+- **Perspective-Aware Intelligence** that leverages the unique vantage point of each organizational role
 - Structured output with schema validation powered by `generateObject`
 - Deterministic risk normalization via `mapRiskLevel`
+- Retrieval-augmented reasoning with automatic fallback to conserve tokens when no strong matches exist
 - Decision trace and source links to explain model reasoning
 - Copy-to-clipboard artifact optimized for distributing the report
 - **Run logging and analytics** with session-based tracking and recent runs history
+- **Production-grade reliability** with comprehensive error handling, graceful fallbacks, and race condition recovery
 
 ---
 
@@ -50,13 +59,13 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
 - **AI Integration**: AI SDK (`ai`) with `@ai-sdk/openai` (5.23.1) for structured object generation
 - **Database**: Supabase with PostgreSQL for run logging, session tracking, and caching
 - **Architecture**: Domain-driven folder structure with clear separation of concerns
-  - `lib/ai/`: AI model configuration and prompts
+  - `lib/ai/`: AI model configuration, dynamic prompting system, agentic RAG orchestration, and embeddings
   - `lib/business/`: Core business logic, risk evaluation, and data normalization
   - `lib/client/`: Browser-safe utilities and UI helpers
   - `lib/server/`: Server-only utilities (session management)
-  - `lib/db/`: Database clients and queries
+  - `lib/db/`: Database clients, vector retrieval, and queries
 - **Risk Logic**: Multi-layered evaluation system with enum normalization, decision trace bounds, and guardrails
-- **Testing**: Comprehensive test suite (113 tests) with domain-organized structure covering business logic, API integration, and UI components
+- **Testing**: Comprehensive test suite (133 tests) with domain-organized structure covering business logic, API integration, and UI components
 - **Code Quality**: ESLint + Prettier with strict TypeScript and kebab-case naming conventions
 - **Deployment**: Containerized with Docker (multi-stage builds), nginx reverse proxy, and deployed on Fly.io with auto-scaling
 - **Security**: Comprehensive security headers, non-root execution, and secure error handling
@@ -66,10 +75,13 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
 ## 🧠 Architecture Notes
 
 ### Core Components
-- **API Route** (`app/api/impact-analysis/route.ts`): Handles validation, invokes `generateObject`, applies risk mapping with normalization and bounds checking, includes session-based caching
+- **API Route** (`app/api/impact-analysis/route.ts`): Orchestrates agentic RAG vs single-agent decision flow, handles validation, applies risk mapping with normalization and bounds checking, includes session-based caching with robust error handling and graceful fallbacks
+- **Dynamic Prompting** (`lib/ai/dynamic-prompting.ts`): Role-specific prompt enhancement that combines role perspective with change context and RAG insights
+- **Agentic RAG** (`lib/ai/agentic-rag.ts`): Intelligent retrieval system that uses historical context when confidence is high, falls back to single-agent when not
+- **Vector Retrieval** (`lib/db/retrieval.ts`): Embedding-based similarity search for historical analysis patterns
 - **Client Form** (`components/impact-analysis/analysis-form.tsx`): Collects user input and triggers analysis with `submitImpactAnalysis`
 - **Report Rendering** (`components/impact-analysis/analysis-report-artifact.tsx`): Displays structured response with copy-to-clipboard functionality
-- **Types & Schema** (`types/impact-analysis.ts`): Shared contracts ensuring API and UI stay in sync
+- **Types & Schema** (`types/impact-analysis.ts`): Shared contracts ensuring API and UI stay in sync, with snake_case consistency for database fields
 
 ### Business Logic Layer
 - **Risk Evaluation** (`lib/business/evaluator.ts`): Deterministic risk mapping with organizational guardrails
@@ -78,8 +90,33 @@ Instead of just mapping processes, ChangeSim highlights how shifts—like a new 
 
 ### Data Persistence
 - **Session-based Caching**: Reduces token costs by caching identical requests within sessions
-- **Run Logging**: Full analysis runs stored in Supabase for analytics and debugging
+- **Run Logging**: Full analysis runs stored in Supabase for analytics and debugging, with agent_type tracking for agentic RAG vs single-agent analytics
+- **Vector Storage**: Analysis chunks embedded and stored for RAG retrieval using pgvector extension
 - **Input Hashing**: Deterministic cache keys based on normalized inputs
+- **Database Schema**: Consolidated schema in `database/supabase/changesim_impact_analysis.sql` with vector extensions, trigger functions, and custom insertion utilities
+
+### Dynamic Prompting & Agentic RAG Flow
+
+The system uses an intelligent decision flow for enhanced contextual analysis:
+
+```
+┌─────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│ Role +      │ ──▶│ Dynamic Prompt  │ ──▶│ RAG Confidence  │ ──▶│ Enhanced        │
+│ Change      │    │ Enhancement     │    │ Check           │    │ Analysis        │
+└─────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘
+    │                       │                      │                    │
+    │                       │                      │                    │
+    ▼                       ▼                      ▼                    ▼
+Role-Specific           Contextual             Agentic RAG vs         Perspective-Aware
+Change Analysis         Role Context +         Single Agent           Impact Analysis +
+                        Historical RAG         Decision               Ripple Effects
+```
+
+1. **Dynamic Prompting**: Combines role perspective with specific change context for targeted analysis
+2. **RAG Retrieval**: Embeds query and retrieves similar historical scenarios with confidence scoring
+3. **Intelligent Routing**: Uses agentic RAG when confident matches exist, falls back to enhanced single-agent otherwise
+4. **Ripple Effects**: Analyzes both direct impacts and cascading organizational effects from the role's unique perspective
+5. **Enhanced Output**: Produces contextually-aware analysis that leverages both role expertise and historical patterns
 
 ### Risk Evaluation Logic
 
@@ -99,13 +136,33 @@ Dimensions              Alignment                                   Bounds      
                         (normalize.ts)                              (decision-trace.ts) Medium/Low)
 ```
 
-1. **AI Analysis**: GPT-4o-mini generates contextual risk scoring dimensions (scope, severity, human_impact, time_sensitivity)
+1. **AI Analysis**: GPT-4.1-mini generates contextual risk scoring dimensions (scope, severity, human_impact, time_sensitivity)
 2. **Enum Normalization**: `normalize.ts` aligns schema enums with evaluator expectations to prevent silent fallbacks
 3. **Deterministic Mapping**: `mapRiskLevel()` function applies consistent business rules to ensure reliable risk classification
 4. **Guardrails & Bounds**: Organizational scope caps, single-person limits, and decision trace bounds (`decision-trace.ts`) prevent over-classification and prompt drift
 5. **Final Classification**: Produces a reliable risk level (Critical / High / Medium / Low)
    that leaders can use to anticipate impact and plan supportive actions.
-   
+
+### Reliability & Error Recovery
+
+ChangeSim is designed for production reliability with comprehensive error handling:
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│ Service Errors  │ ──▶│ Classification  │ ──▶│ Graceful        │ ──▶│ User Gets       │
+│ (AI, DB, Cache) │    │ & Specific      │    │ Fallbacks       │    │ Analysis        │
+│                 │    │ Status Codes    │    │                 │    │ Regardless      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+- **Intelligent Error Classification**: Distinguishes between rate limits (429), service unavailability (502), and schema validation errors with appropriate user messaging
+- **Graceful Database Failures**: Cache lookups and logging failures don't prevent analysis completion - user experience takes priority
+- **Race Condition Recovery**: Concurrent requests automatically detect and recover from database constraint violations
+- **Agentic RAG Fallbacks**: When vector retrieval fails or has insufficient context, automatically falls back to enhanced single-agent analysis
+- **Comprehensive Test Coverage**: 133 tests cover error scenarios, edge cases, and failure modes to ensure reliability in production
+
+The system prioritizes **delivering analysis results to users** even when supporting infrastructure experiences issues.
+
 ---
 
 ## 🔐 API Authentication
@@ -173,6 +230,7 @@ ChangeSim implements a dual-mode authentication system:
      ```bash
      # Copy the contents of database/supabase/changesim_impact_analysis.sql
      # and execute it in your Supabase SQL Editor
+     # This includes vector extensions, embedding triggers, and RAG functions
      ```
    - Or use the Supabase CLI:
      ```bash
@@ -189,9 +247,9 @@ ChangeSim implements a dual-mode authentication system:
    ```bash
    pnpm lint              # Check code style with ESLint
    pnpm format            # Format code with Prettier
-   pnpm test              # Run comprehensive test suite including risk evaluation edge cases
+   pnpm test              # Run comprehensive test suite (133 tests) including error handling, race conditions, and business logic edge cases
    pnpm test:watch        # Run tests in watch mode during development
-   pnpm build             # Build for production
+   pnpm build             # Build for production with optimization
    ```
 
 ## 🚀 Deployment to Fly.io
@@ -264,9 +322,11 @@ The application implements multiple security layers:
 - **Container Security**: Multi-stage Docker builds with non-root user execution
 - **Process Isolation**: nginx runs as root for port 80 binding, Next.js as dedicated `nextjs` user
 - **API Authentication**: Token-based security with same-origin detection for frontend calls
-- **Error Handling**: Secure error responses that don't expose sensitive internal information
+- **Error Handling**: Intelligent error classification with specific status codes (429 for rate limits, 502 for service issues) and secure fallbacks that continue operation even when supporting systems fail
+- **Graceful Degradation**: Database and cache failures don't prevent analysis completion - the system prioritizes user experience over perfect logging
 - **Data Privacy**: No sensitive data logged or exposed in API responses
 - **Network Security**: Comprehensive security headers via nginx reverse proxy
+- **Race Condition Handling**: Robust concurrent request management with automatic recovery mechanisms
 
 ### Troubleshooting
 

@@ -21,17 +21,14 @@ if (!isBuildTime) {
   if (!supabaseKey) {
     throw new Error(
       'SUPABASE_KEY environment variable is missing. Please add it to your .env.local file. ' +
-      'This should be the service role key for server-side operations only.'
+        'This should be the service role key for server-side operations only.'
     )
   }
 }
 
 // Server-side Supabase client with service key for write operations
 // Use placeholder values during build time
-export const sb = createClient(
-  supabaseUrl || PLACEHOLDER_URL,
-  supabaseKey || PLACEHOLDER_KEY
-)
+export const sb = createClient(supabaseUrl || PLACEHOLDER_URL, supabaseKey || PLACEHOLDER_KEY)
 
 // Type definitions for database operations (matches actual schema)
 export interface ChangeSimImpactAnalysisRunInsert {
@@ -39,15 +36,15 @@ export interface ChangeSimImpactAnalysisRunInsert {
   process: string // text not null
   role: string
   change_description: string
-  context?: string | null  // text column in DB
+  context?: string | null // text column in DB
   analysis_summary: string
   risk_level: string
+  risk_rationale: string
   risk_factors: string[] // JSONB array
   risk_scoring: Record<string, unknown> // JSONB object
   decision_trace: string[] // JSONB array (not wrapped in object)
-  sources: Array<{title: string, url: string}> // JSONB array
+  sources: Array<{ title: string; url: string }> // JSONB array
   meta: Record<string, unknown> // JSONB object containing model, temperature, etc.
   session_id?: string | null
   input_hash?: string | null
 }
-

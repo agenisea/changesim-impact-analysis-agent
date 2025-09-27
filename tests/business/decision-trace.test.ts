@@ -6,7 +6,7 @@ import {
   appendSystemNoteWithBounds,
   validateDecisionTrace,
   MAX_DECISION_TRACE_LENGTH,
-  MIN_DECISION_TRACE_LENGTH
+  MIN_DECISION_TRACE_LENGTH,
 } from '@/lib/business/decision-trace'
 
 describe('Decision Trace Bounds Management', () => {
@@ -26,16 +26,10 @@ describe('Decision Trace Bounds Management', () => {
         'Decision 4',
         'Decision 5',
         'Decision 6', // This exceeds max of 5
-        'Decision 7'
+        'Decision 7',
       ]
       const result = boundDecisionTrace(trace)
-      expect(result).toEqual([
-        'Decision 1',
-        'Decision 2',
-        'Decision 3',
-        'Decision 4',
-        'Decision 5'
-      ])
+      expect(result).toEqual(['Decision 1', 'Decision 2', 'Decision 3', 'Decision 4', 'Decision 5'])
       expect(result.length).toBe(MAX_DECISION_TRACE_LENGTH)
     })
 
@@ -52,7 +46,14 @@ describe('Decision Trace Bounds Management', () => {
     })
 
     it('should not mutate original array', () => {
-      const original = ['Decision 1', 'Decision 2', 'Decision 3', 'Decision 4', 'Decision 5', 'Decision 6']
+      const original = [
+        'Decision 1',
+        'Decision 2',
+        'Decision 3',
+        'Decision 4',
+        'Decision 5',
+        'Decision 6',
+      ]
       const originalCopy = [...original]
       const result = boundDecisionTrace(original)
 
@@ -80,7 +81,7 @@ describe('Decision Trace Bounds Management', () => {
         'Decision 2',
         'Decision 3',
         'Decision 4',
-        'System note'
+        'System note',
       ])
       expect(result.length).toBe(5)
     })
@@ -93,7 +94,7 @@ describe('Decision Trace Bounds Management', () => {
         'Decision 4',
         'Decision 5',
         'Decision 6', // Exceeds normal capacity
-        'Decision 7'
+        'Decision 7',
       ]
       const result = appendSystemNoteWithBounds(trace, 'System note')
 
@@ -102,7 +103,7 @@ describe('Decision Trace Bounds Management', () => {
         'Decision 2',
         'Decision 3',
         'Decision 4',
-        'System note'
+        'System note',
       ])
       expect(result.length).toBe(5)
     })
@@ -146,11 +147,7 @@ describe('Decision Trace Bounds Management', () => {
     })
 
     it('should reject arrays below minimum length', () => {
-      const shortTraces = [
-        [],
-        ['Decision 1'],
-        ['Decision 1', 'Decision 2']
-      ]
+      const shortTraces = [[], ['Decision 1'], ['Decision 1', 'Decision 2']]
 
       shortTraces.forEach(trace => {
         const result = validateDecisionTrace(trace)
@@ -178,7 +175,7 @@ describe('Decision Trace Bounds Management', () => {
         'Evaluated technical complexity and dependencies',
         'Assessed potential user impact and disruption',
         'Considered implementation timeline and resources',
-        'Applied risk scoring based on severity matrix'
+        'Applied risk scoring based on severity matrix',
       ]
 
       // System adds guardrail note
@@ -188,7 +185,9 @@ describe('Decision Trace Bounds Management', () => {
       )
 
       expect(withGuardrail.length).toBe(5)
-      expect(withGuardrail[4]).toBe('Risk level adjusted downward due to organizational scope guardrail')
+      expect(withGuardrail[4]).toBe(
+        'Risk level adjusted downward due to organizational scope guardrail'
+      )
 
       // Validate it meets schema requirements
       const validation = validateDecisionTrace(withGuardrail)

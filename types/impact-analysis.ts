@@ -1,4 +1,4 @@
-import { type CacheStatus, type AnalysisStatus } from '@/lib/utils/constants'
+import { type CacheStatus, type AnalysisStatus, type AgentType } from '@/lib/utils/constants'
 
 export interface ImpactAnalysisInput {
   readonly role: string
@@ -8,7 +8,7 @@ export interface ImpactAnalysisInput {
 export type ImpactAnalysisResult = {
   analysis_summary: string // main narrative
   risk_level: 'low' | 'medium' | 'high' | 'critical'
-  risk_rationale?: string // 1-line explanation shown in the badge tooltip
+  risk_rationale: string // Required 1-line explanation shown in the badge tooltip
   risk_factors: string[] // 1-4 specific risk factors
   readonly risk_scoring: {
     readonly scope: 'individual' | 'team' | 'organization' | 'national' | 'global'
@@ -23,7 +23,13 @@ export type ImpactAnalysisResult = {
     status?: AnalysisStatus
     run_id?: string
     role?: string // Role from input
-    changeDescription?: string // Change description from input
+    change_description?: string // Change description from input
+    context: unknown | null // Additional context from input (always present, null if not provided)
     _cache?: CacheStatus // Cache source: 'hit', 'race', 'miss', 'session'
+    agent_type?: AgentType
+    rag?: {
+      match_count: number
+      average_similarity: number
+    }
   }
 }
