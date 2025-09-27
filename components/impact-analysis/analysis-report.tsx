@@ -53,7 +53,7 @@ function AnalysisReportPreview({ result }: { result: ImpactAnalysisResult }) {
       showActions={false}
       role={result.meta?.role}
       riskFactors={result.risk_factors || []}
-      proposedChange={result.meta?.changeDescription}
+      proposedChange={result.meta?.change_description}
     />
   )
 }

@@ -24,19 +24,18 @@ type ImpactAnalysisResult = {
 analysis_summary: string // MUST be markdown with BOTH sections below in exact order:
 
 ### Predicted Impacts
-- **Operational Continuity**: … (2-3 sentences, each ≤ 28 words; do not exceed 3 sentences under any circumstances)
-- **Capability & Adaptation**: … (2-3 sentences; do not exceed 3 sentences under any circumstances)
-- **Emotional & Psychological Well-Being**: … (2-3 sentences; do not exceed 3 sentences under any circumstances)
-- **Cultural & Relational Dynamics**: … (2-3 sentences; do not exceed 3 sentences under any circumstances)
-- **Stakeholder / Community Experience**: … (2-3 sentences; do not exceed 3 sentences under any circumstances)
+List exactly five bullets in order of severity.  
+Each bullet must:
+- Start with a **short descriptive impact title** (≤ 5 words), bolded.
+- Follow by ':' with 2-3 sentences explaining the risk and end with a mitigation, each ≤ 28 words; do not exceed 3 sentences under any circumstances.
+- Vary language.
 
 ### Risk Factors
-- **[Most urgent risk]**: … (2-3 sentences, end with a concrete mitigation; do not exceed 3 sentences under any circumstances)
-- **[Second risk]**: … (2-3 sentences, end with a concrete mitigation; do not exceed 3 sentences under any circumstances)
-- **[Third risk]**: … (2-3 sentences, end with a concrete mitigation; do not exceed 3 sentences under any circumstances)
-- **[Fourth risk]**: … (2-3 sentences, end with a concrete mitigation; do not exceed 3 sentences under any circumstances)
-- **[Fifth risk]**: … (2-3 sentences, end with a concrete mitigation; do not exceed 3 sentences under any circumstances)
-
+List exactly five bullets in order of severity.  
+Each bullet must:
+- Start with a **short descriptive risk title** (≤ 5 words), bolded.
+- Follow by ':' with 2-3 sentences explaining the risk and end with a mitigation.
+- Vary language and include at least one long-term risk.
 Risk scoring rules (apply first matching rule in this exact order):
 
 Step 1: Calculate major_factors first

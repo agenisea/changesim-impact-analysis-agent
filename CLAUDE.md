@@ -152,7 +152,7 @@ import { ImpactAnalysisInput } from '@/types/impact-analysis'
   - ❌ Internal database IDs (except public `run_id`)
   - ❌ Any portion of hash values (not even substring(0, 8))
 - **Safe to expose** in API responses:
-  - ✅ Static values (timestamps, status, role, changeDescription)
+  - ✅ Static values (timestamps, status, role, change_description)
   - ✅ Public identifiers (`run_id`)
   - ✅ Non-sensitive metadata (`_cache` for transparency)
 

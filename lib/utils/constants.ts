@@ -11,7 +11,9 @@ export const PROCESS_NAME = 'changesim_impact_analysis_v1'
 // Model configuration
 export const MODEL = 'gpt-4o-mini'
 export const TEMPERATURE = 0.2
-export const MAX_OUTPUT_TOKENS = 1500
+export const MAX_OUTPUT_TOKENS = 2500
+
+export const EMBEDDING_MODEL = 'text-embedding-3-small'
 
 // Cache status constants for headers and meta consistency
 export const CACHE_STATUS = {
@@ -39,6 +41,13 @@ export const EMBEDDING_CONFIG = {
   RETRY_DELAY_MS: 500
 } as const
 
+export const RAG_CONFIG = {
+  MATCH_COUNT: 4,
+  MATCH_THRESHOLD: 0.72,
+  MIN_RESULTS: 2,
+  FALLBACK_SIMILARITY: 0.6
+} as const
+
 // Composite chunk types for semantic organization
 export const COMPOSITE_CHUNK_TYPES = {
   ROLE_CHANGE_CONTEXT: 'role_change_context',
@@ -48,3 +57,11 @@ export const COMPOSITE_CHUNK_TYPES = {
 } as const
 
 export type CompositeChunkType = typeof COMPOSITE_CHUNK_TYPES[keyof typeof COMPOSITE_CHUNK_TYPES]
+
+// Agent type constants
+export const AGENT_TYPE = {
+  AGENTIC_RAG: 'agentic-rag',
+  SINGLE_AGENT: 'single-agent'
+} as const
+
+export type AgentType = typeof AGENT_TYPE[keyof typeof AGENT_TYPE]

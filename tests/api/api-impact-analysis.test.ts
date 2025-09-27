@@ -9,7 +9,7 @@ import type { ImpactAnalysisResult } from '@/types/impact-analysis'
 
 // Mock external dependencies
 vi.mock('@/lib/ai/ai-client', () => ({
-  impactModel: { modelId: 'gpt-4o-mini' }
+  impactModel: { modelId: 'gpt-4.1-mini' }
 }))
 
 vi.mock('@/lib/db/client', () => ({
@@ -191,7 +191,7 @@ describe('API Route: /api/impact-analysis', () => {
       expect(result.meta).toMatchObject({
         status: ANALYSIS_STATUS.COMPLETE,
         role: validInput.role,
-        changeDescription: validInput.changeDescription,
+        change_description: validInput.changeDescription,
         _cache: CACHE_STATUS.MISS
       })
       expect(result.meta?.timestamp).toBeTruthy()

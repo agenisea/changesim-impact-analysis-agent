@@ -30,7 +30,8 @@ const baseResult: ImpactAnalysisResult = {
     timestamp: '2024-01-15T12:00:00.000Z',
     status: ANALYSIS_STATUS.COMPLETE,
     role: 'Support Team',
-    changeDescription: 'Migrate to new CRM platform',
+    change_description: 'Migrate to new CRM platform',
+    context: null,
   },
 }
 
